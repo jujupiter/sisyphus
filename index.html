@@ -1,0 +1,142 @@
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>SISYphus</title>
+		<style>
+			body{
+				background: #002 url("cosmos.jpg") no-repeat center center;
+			}
+			div#playground{
+				width: 350px;
+				height: 350px;
+				position: absolute;
+				top:0;
+				bottom: 0;
+				left: 0;
+				right: 0;
+				margin: auto;
+			}
+		</style>
+		<script src="http://d3js.org/d3.v3.min.js"></script>
+		<script src="http://d3js.org/queue.v1.min.js"></script>
+		<script src="http://d3js.org/topojson.v1.min.js"></script>
+	</head>
+	<body>
+		<div id="playground"></div>
+		<script>
+			var diameter = 350,
+				width = diameter,
+				height = diameter,
+				x = 0,
+				y = 0;
+
+			var projection = d3.geo.orthographic()
+				.scale(diameter/2)
+				.translate([width / 2, height / 2])
+				.clipAngle(90);
+
+			var canvas = d3.select("div#playground").append("canvas")
+				.attr("width", width)
+				.attr("height", height);
+
+			var c = canvas.node().getContext("2d");
+
+			var path = d3.geo.path()
+				.projection(projection)
+				.context(c);
+				
+			var paused = false;
+				
+			var coordinates = [
+				[2.3522219, 48.856614], // Paris
+				[-78.4678382, -0.1806532], // Quito
+				[74.31884099999999, 14.5478586], // Gokarna
+				[144.96328, -37.814107] // Melbourne
+			];
+
+			queue()
+				.defer(d3.json, "political.json")
+				.await(ready);
+
+			function ready(error, world) {
+			  var globe = {type: "Sphere"},
+				  land = topojson.feature(world, world.objects.land);
+				  console.log(land);
+			  (function transition() {
+				d3.transition()
+					.duration(30)
+					.tween("rotate", function() {
+						if(!paused) {
+						  x -= 1;
+						  if(x<-360) {
+							x = 0;
+						  }
+						  var r = d3.interpolate(projection.rotate(), [x, y]);
+						  // 2. Compute top items, left and right (right becomes left when left is out of range and right is determines as longitude is bigger than left's longitude and in the visuable range)
+						  // 3. Compute bottoms items, left and right (right becomes left when left disappears and right is determines as longitude is bigger than left's longitude and in the visuable range)
+						  return function(t) {
+							projection.rotate(r(t));
+							c.clearRect(0, 0, width, height);
+							// Sea
+							c.fillStyle = '#111177';
+							c.beginPath();
+							c.arc(width/2, height/2, height/2, 0, 2 * Math.PI, false);
+							c.fill();
+							// Land
+							c.fillStyle = "#55ee22";
+							c.beginPath();
+							path(land);
+							c.fill();
+							// Landmarks
+							displayLandmarks();
+							// Cities
+							for(var i=0;i<coordinates.length;i++) {
+								setOnMap(coordinates[i][0], coordinates[i][1]);
+							}
+							isVisible(74.31884099999999, 'Gokarna');
+						  };
+						}
+					})
+				  .transition()
+					.each("end", transition);
+			  })();
+			}
+			
+			function displayLandmarks() {
+				c.strokeStyle = "#0ff";
+				c.beginPath();
+				c.moveTo(width/2, 0);
+				c.lineTo(width/2, height);
+				c.stroke();
+				c.beginPath();
+				c.moveTo(0, height/2);
+				c.lineTo(width, height/2);
+				c.stroke();
+			}
+			
+			function setOnMap(lng, lat) {
+				c.fillStyle = "#fff";
+				c.beginPath();
+				var city = {
+					type: "Feature",
+					properties: {},
+					geometry : {
+					  "type": "Point",
+					  "coordinates": [lng, lat]
+					}
+				};
+				path(city);
+				c.fill();
+			}
+			
+			function isVisible(lng, name) {
+				return (x+lng>=-90 || x+lng<=-270);
+			}
+			
+			function pause() {
+				paused = !paused;
+			}
+		</script>
+		<a href="javascript:pause()">Pause</a>
+	</body>
+</html>
