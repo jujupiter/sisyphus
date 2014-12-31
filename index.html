@@ -46,30 +46,65 @@
 				.context(c);
 				
 			var paused = false;
-				
-			var coordinates = [
-				[2.3522219, 48.856614], // Paris
-				[-78.4678382, -0.1806532], // Quito
-				[74.31884099999999, 14.5478586], // Gokarna
-				[144.96328, -37.814107], // Melbourne
-				[-6.0216578, 37.3152203] // Sevilla
-			];
+			  
+			var index=0;
+			var superLocations = [];
+			var land = null;
+			var globe = {type: "Sphere"};
+			var albums = [];
 
 			queue()
 				.defer(d3.json, "political.json")
+				.defer(d3.json, "https://picasaweb.google.com/data/feed/api/user/jujupiter?alt=json")
 				.await(ready);
 
-			function ready(error, world) {
-			  var globe = {type: "Sphere"},
-				  land = topojson.feature(world, world.objects.land);
-				  console.log(land);
-			  (function transition() {
+			function ready(error, world, albums) {
+			  land = topojson.feature(world, world.objects.land);
+			  albums = albums.feed.entry;
+				  
+			  var locations = [];
+			  for(var i=0; i<albums.length; i++) {
+				if(locations.indexOf(albums[i]['gphoto$location']['$t'])==-1) {
+					locations.push(albums[i]['gphoto$location']['$t']);
+				}
+			  }
+					 
+			  d3.json("http://maps.google.com/maps/api/geocode/json?address="+locations[0], requestingCoordinates);
+			  
+			  function requestingCoordinates(error, results) {
+			    if(error) console.error(error);
+			    if(results.results.length>0) {
+					var tLng = results.results[0].geometry.location.lng;
+					var tLat = results.results[0].geometry.location.lat;
+					superLocations.push({
+						name: locations[index],
+						// We only take the first result
+						lat: tLat,
+						lng: tLng
+					});
+					d3.json("location.php?action=add&name="+locations[index]+"&lat="+tLat+"&lng="+tLng, function() {});
+				}
+				else {
+					d3.json("location.php?action=add&name="+locations[index]+"&lat=&lng=", function() {});
+				}
+				index++;
+				if(index+1>=locations.length) {
+					transition();
+				}
+				else {
+					d3.json("http://maps.google.com/maps/api/geocode/json?address="+locations[index], requestingCoordinates);
+				}
+			  }
+			  
+			}
+			
+			function transition() {
 				d3.transition()
 					.duration(30)
 					.tween("rotate", function() {
 						if(!paused) {
-						  x -= 1;
-						  if(x<-360) {
+						  x += 1;
+						  if(x>360) {
 							x = 0;
 						  }
 						  var r = d3.interpolate(projection.rotate(), [x, y]);
@@ -91,16 +126,14 @@
 							// Landmarks
 							displayLandmarks();
 							// Cities
-							for(var i=0;i<coordinates.length;i++) {
-								setOnMap(coordinates[i][0], coordinates[i][1]);
+							for(var i=0;i<superLocations.length;i++) {
+								setOnMap(superLocations[i].lng, superLocations[i].lat);
 							}
-							isVisible(74.31884099999999, 'Gokarna');
 						  };
 						}
 					})
 				  .transition()
 					.each("end", transition);
-			  })();
 			}
 			
 			function displayLandmarks() {
@@ -131,7 +164,7 @@
 			}
 			
 			function isVisible(lng, name) {
-				return (x+lng>=-90 || x+lng<=-270);
+				return (x+lng<=90 || x+lng>=270);
 			}
 			
 			function pause() {
