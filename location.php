@@ -120,10 +120,10 @@ class LocationsController {
 	public static function listing() {
 		$res = Location::listing();
 		$cnt = count($res);
-		echo '{locations:[';
+		echo '{"locations":[';
 		for($i=0; $i<$cnt; $i++) {
 			if($i>0) echo ',';
-			echo '{id:'.$res[$i]['id'].',name:"'.$res[$i]['name'].'",lng:'.($res[$i]['lng']?$res[$i]['lng']:'null').',lat:'.($res[$i]['lat']?$res[$i]['lat']:'null').',invalid:'.($res[$i]['invalid']?'true':'false').'}';
+			echo '{"id":'.$res[$i]['id'].',"name":"'.$res[$i]['name'].'","lng":'.($res[$i]['lng']?$res[$i]['lng']:'null').',"lat":'.($res[$i]['lat']?$res[$i]['lat']:'null').',"invalid":'.($res[$i]['invalid']?'true':'false').'}';
 		}
 		echo ']}';
 	}
