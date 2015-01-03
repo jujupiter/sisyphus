@@ -88,7 +88,6 @@
 				}
 				else {
 					// Display the globe
-					console.log(knownLocations);
 					order();
 				}
 			}
@@ -136,7 +135,6 @@
 				}
 				index++;
 				if(index+1>=unknownLocations.length) {
-					console.log(knownLocations);
 					order();
 				}
 				else {
@@ -178,16 +176,25 @@
 				north: [],
 				south: []
 			};
+			var alreadySelectedPositions = {
+				north: [],
+				south: []
+			};
+			
 			var observableUniverse = {
 				min: null,
 				max: null,
 				north: [],
 				south: [],
+				westnorth: [],
+				westsouth: [],
 				update: function() {
 					this.min = 90-x;
 					this.max = 270-x;
 					this.north = this.filter(northHemisphere);
 					this.south = this.filter(southHemisphere);
+					this.westnorth = this.westFilter(northHemisphere);
+					this.westsouth = this.westFilter(southHemisphere);
 				},
 				isVisible: function(lng) {
 					return (lng <= this.min || lng >= this.max);
@@ -200,10 +207,30 @@
 						}
 					}
 					return filtered;
+				},
+				westFilter: function(hemisphere) {
+					var filtered = [];
+					for(var i=0; i<hemisphere.length; i++) {
+						var lag = hemisphere[i].lng + x;
+						if((lag < 0 && lag > -90) || (lag > 270 && lag < 360)) {
+							filtered.push(hemisphere[i]);
+						}
+					}
+					return filtered;
 				}
 			};
 			
-			function isAlreadySelected(hemisphere, position) {
+			function isFarEnough(hemisphere, position) {
+				for(var i=0;i<selectedPositions[hemisphere].length; i++) {
+					if(selectedPositions[hemisphere][i]) console.log(selectedPositions[hemisphere][i].name, selectedPositions[hemisphere][i].lng, position.name, position.lng);
+					if(selectedPositions[hemisphere][i] && !( (position.lng > selectedPositions[hemisphere][i].lng+25) || (position.lng < selectedPositions[hemisphere][i].lng-25) )) {
+						return false;
+					}
+				}
+				return true;
+			}
+			
+			function isSelected(hemisphere, position) {
 				for(var i=0;i<selectedPositions[hemisphere].length; i++) {
 					if(selectedPositions[hemisphere][i]==position) {
 						return true;
@@ -212,13 +239,50 @@
 				return false;
 			}
 			
-			function selectPositions(hemisphere, index) {
-				if(!selectedPositions[hemisphere][index] || !observableUniverse.isVisible(selectedPositions[hemisphere][index].lng)) {
+			function hasAlreadyBeenSelected(hemisphere, position) {
+				for(var i=0;i<alreadySelectedPositions[hemisphere].length; i++) {
+					if(alreadySelectedPositions[hemisphere][i]==position) {
+						return true;
+					}
+				}
+				return false;
+			}
+			
+			function flushAlreadyBeenSelected() {
+				if(alreadySelectedPositions.north.length >= northHemisphere.length) {
+					alreadySelectedPositions.north = [];
+				}
+				if(alreadySelectedPositions.south.length >= southHemisphere.length) {
+					alreadySelectedPositions.south = [];
+				}
+			}
+			
+			function selectPositions() {
+				selectPosition('north', 0);
+				selectPosition('north', 1);
+				selectPosition('south', 0);
+				selectPosition('south', 1);
+			}
+			
+			function selectPosition(hemisphere, index) {
+				if(selectedPositions[hemisphere][index] && !observableUniverse.isVisible(selectedPositions[hemisphere][index].lng)) {
+					selectedPositions[hemisphere][index] = null;
+				}
+				if(!selectedPositions[hemisphere][index]) {
 					// Pick randomly a position
-					var pool = observableUniverse[hemisphere];
-					var newIndex = Math.floor(Math.random()*(pool.length-0.00001));
-					if(!isAlreadySelected(hemisphere, pool[newIndex])) {
-						selectedPositions[hemisphere][index] = pool[newIndex];
+					var pool = observableUniverse['west'+hemisphere];
+					if(pool.length>0) {
+						var newIndex = Math.floor(Math.random()*(pool.length));
+						if(newIndex==pool.length) {
+							newIndex--;
+						}
+						if(isFarEnough(hemisphere, pool[newIndex]) && !hasAlreadyBeenSelected(hemisphere, pool[newIndex])) {
+							selectedPositions[hemisphere][index] = pool[newIndex];
+							alreadySelectedPositions[hemisphere].push(pool[newIndex]);
+						}
+						else {
+							selectedPositions[hemisphere][index] = null;
+						}
 					}
 				}
 			}
@@ -233,6 +297,7 @@
 							x = 0;
 						  }
 						  observableUniverse.update();
+						  flushAlreadyBeenSelected();
 						  var r = d3.interpolate(projection.rotate(), [x, y]);
 						  // 2. Compute top items, left and right (right becomes left when left is out of range and right is determines as longitude is bigger than left's longitude and in the visuable range)
 						  // 3. Compute bottoms items, left and right (right becomes left when left disappears and right is determines as longitude is bigger than left's longitude and in the visuable range)
@@ -251,46 +316,31 @@
 							c.fill();
 							// Landmarks
 							//displayLandmarks();
-							// Cities
-							/*for(var i=0;i<knownLocations.length;i++) {
-								if(!knownLocations[i].invalid && knownLocations[i].hasOwnProperty('albums') && knownLocations[i].albums.length>0) {
-									setOnMap(knownLocations[i]);
-								}
-							}*/
-							// Cities from different hemispheres
-							/*var nL = Math.min(x, northHemisphere.length);
-							for(var i=0;i<northHemisphere.length;i++) {
-								setOnMap(northHemisphere[i], '#ff0');
+							
+							// West
+							for(var i=0;i<observableUniverse.westnorth.length;i++) {
+								setOnMap(observableUniverse.westnorth[i], '#f00');
 							}
-							var sL = Math.min(x, southHemisphere.length);
-							for(var i=0;i<southHemisphere.length;i++) {
-								setOnMap(southHemisphere[i], '#f00');
-							}*/
+							for(var i=0;i<observableUniverse.westsouth.length;i++) {
+								setOnMap(observableUniverse.westsouth[i], '#f00');
+							}
+							
+							// Already selected
+							for(var i=0;i<alreadySelectedPositions.north.length;i++) {
+								setOnMap(alreadySelectedPositions.north[i], '#f0f');
+							}
+							for(var i=0;i<alreadySelectedPositions.south.length;i++) {
+								setOnMap(alreadySelectedPositions.south[i], '#f0f');
+							}
+							
 							// Define the 4 selected positions : either they are empty or not in the observable universe anymore
-							
-							
-							/*if(!selectedPositions.NE || !observableUniverse.isVisible(selectedPositions.NE.lng)) {
-								// Pick randomly a position
-								var iterations = Math.round(Math.random()*10);
-								var select = null;
-								for(var i=0; i<iterations; i++) {
-									var superIterations = Math.floor(Math.random()*northHemisphere.length);
-									for(var j=0; j<superIterations; j++) {
-										if(observableUniverse.isVisible(northHemisphere[j].lng) && northHemisphere[j].lng < 0) {
-											selected = northHemisphere[j];
-										}
-									}
-								}
-								selectedPositions.NW = selected;
-							}*/
-							selectPositions('north', 0);
-							selectPositions('north', 1);
-							selectPositions('south', 0);
-							selectPositions('south', 1);
-							setOnMap(selectedPositions['north'][0], '#ff0');
-							setOnMap(selectedPositions['north'][1], '#ff0');
-							setOnMap(selectedPositions['south'][0], '#ff0');
-							setOnMap(selectedPositions['south'][1], '#ff0');
+							selectPositions();
+							for(var i=0; i<selectedPositions['north'].length; i++) {
+								setOnMap(selectedPositions['north'][i], '#ff0');
+							}
+							for(var i=0; i<selectedPositions['south'].length; i++) {
+								setOnMap(selectedPositions['south'][i], '#ff0');
+							}
 						  };
 						}
 					})
