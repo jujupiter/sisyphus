@@ -2,8 +2,6 @@
 
 require_once('configuration.php');
 
-define('DEBUG', 1);
-
 /**
  * Class managing the DB connection
  */
@@ -37,7 +35,7 @@ class Location {
 		Db::connect();
 		// If no coordinate is sent, the location is regarded as invalid
 		// NB : 
-		$invalid = ($lng || $lat) ? 'false' : 'true';
+		$invalid = ($lng || $lat) ? 0 : 1;
 		if(empty($lng)) $lng = 'NULL';
 		if(empty($lat)) $lat = 'NULL';
 		$q = "INSERT INTO `locations` (`name`, `lng`, `lat`, `invalid`) VALUES ('$name', $lng, $lat, $invalid);";

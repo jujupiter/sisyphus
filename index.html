@@ -224,7 +224,6 @@
 			
 			function isFarEnough(hemisphere, position) {
 				for(var i=0;i<selectedPositions[hemisphere].length; i++) {
-					if(selectedPositions[hemisphere][i]) console.log(selectedPositions[hemisphere][i].name, selectedPositions[hemisphere][i].lng, position.name, position.lng);
 					if(selectedPositions[hemisphere][i] && !( (position.lng > selectedPositions[hemisphere][i].lng+25) || (position.lng < selectedPositions[hemisphere][i].lng-25) )) {
 						return false;
 					}
