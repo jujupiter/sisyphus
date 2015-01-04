@@ -1,5 +1,7 @@
 <?php
 
+require_once('configuration.php');
+
 define('DEBUG', 1);
 
 /**
@@ -8,10 +10,10 @@ define('DEBUG', 1);
 class Db {
 
 	public static function connect() {
-		if(!mysql_connect("localhost", "root", "")) {
+		if(!mysql_connect(DB_SERVER, DB_USERNAME, DB_PASSWORD)) {
 			throw new Exception('Could not connect to the database ('.mysql_error().')');
 		}
-		if(!mysql_select_db('sisyphus')) {
+		if(!mysql_select_db(DB_NAME)) {
 			throw new Exception('Could not select the appropriate database ('.mysql_error().')');
 		}
 	}

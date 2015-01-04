@@ -24,6 +24,8 @@
 	<body>
 		<div id="playground"></div>
 		<script>
+			var userId = 'jujupiter';
+		
 			var diameter = 350,
 				width = diameter,
 				height = diameter,
@@ -56,7 +58,7 @@
 
 			queue()
 				.defer(d3.json, "political.json")
-				.defer(d3.json, "https://picasaweb.google.com/data/feed/api/user/jujupiter?alt=json")
+				.defer(d3.json, "https://picasaweb.google.com/data/feed/api/user/"+userId+"?alt=json")
 				.defer(d3.json, "location.php?action=listing")
 				.await(ready);
 				
