@@ -3,11 +3,40 @@
 		<meta charset="utf-8">
 		<title>SISYphus</title>
 		<style>
-			body{
+			html, body {
+				font-size: 12px;
+				font-family: Arial, Verdana;
 				background: #002 url("cosmos.jpg") no-repeat center center;
 			}
+		
+			.clear { clear: both; }
+			.left { float: left; }
+			.right { float: right; }
+			.poster{
+				background-color:#fff;
+				height: 40px;
+				padding: 5px;
+			}
+			.poster .left {
+				margin-right: 5px;
+				width: 40px;
+			}
+			.poster .right {
+				display: block;
+				margin-left: 5px;
+				overflow: hidden;
+				width: 140px;
+			}
+			.panel { width: 200px; }
+			.south {
+				position: absolute;
+				bottom: 0px;
+			}
+			
+			canvas {float:left}
+			
 			div#playground{
-				width: 350px;
+				width: 750px;
 				height: 350px;
 				position: absolute;
 				top:0;
@@ -22,7 +51,40 @@
 		<script src="http://d3js.org/topojson.v1.min.js"></script>
 	</head>
 	<body>
-		<div id="playground"></div>
+		<div id="playground">
+			<div class="left panel">
+				<div class="poster north" id="north0">
+					<div class="left">
+						<a class="link" href="#" target="_blank"><img class="thumbnail" src="blank.gif" width="40" height="40"></a>
+					</div>
+					<div class="right"><a class="title" href="#" target="_blank"></a></div>
+					<div class="clear"></div>
+				</div>
+				<div class="poster south" id="south0">
+					<div class="left">
+						<a class="link" href="#" target="_blank"><img class="thumbnail" src="blank.gif" width="40" height="40"></a>
+					</div>
+					<div class="right"><a class="title" href="#" target="_blank"></a></div>
+					<div class="clear"></div>
+				</div>
+			</div>
+			<div class="right panel">
+				<div class="poster north" id="north1">
+					<div class="left">
+						<a class="link" href="#" target="_blank"><img class="thumbnail" src="blank.gif" width="40" height="40"></a>
+					</div>
+					<div class="right"><a class="title" href="#" target="_blank"></a></div>
+					<div class="clear"></div>
+				</div>
+				<div class="poster south" id="south1">
+					<div class="left">
+						<a class="link" href="#" target="_blank"><img class="thumbnail" src="blank.gif" width="40" height="40"></a>
+					</div>
+					<div class="right"><a class="title" href="#" target="_blank"></a></div>
+					<div class="clear"></div>
+				</div>
+			</div>
+		</div>
 		<script>
 			var userId = 'jujupiter';
 		
@@ -30,7 +92,10 @@
 				width = diameter,
 				height = diameter,
 				x = 0,
-				y = 0;
+				y = 0,
+				posterWidth = 200,
+				posterHeight = 50,
+				southPosterY = (diameter-posterHeight);
 
 			var projection = d3.geo.orthographic()
 				.scale(diameter/2)
@@ -288,6 +353,22 @@
 				}
 			}
 			
+			function displayPoster(hemisphere, index) {
+				var poster = d3.select('div#'+hemisphere+index);
+				if(selectedPositions[hemisphere][index]) {
+					poster.style('visibility', 'visible');
+					var albumProp = selectedPositions[hemisphere][index].albums[0];
+					var title = d3.select('div#'+hemisphere+index+' a.title')[0][0];
+					d3.select('div#'+hemisphere+index+' a.link')[0][0].href = title.href = albumProp.link[1].href;
+					d3.select('div#'+hemisphere+index+' img.thumbnail')[0][0].src = albumProp.media$group.media$thumbnail[0].url;
+					title.innerText = albumProp.title.$t;
+				}
+				else {
+					poster.style('visibility', 'hidden');
+					d3.select('div#'+hemisphere+index+' img.thumbnail')[0][0].src = 'blank.gif';
+				}
+			}
+			
 			function transition() {
 				d3.transition()
 					.duration(30)
@@ -319,34 +400,38 @@
 							//displayLandmarks();
 							
 							// West
-							for(var i=0;i<observableUniverse.westnorth.length;i++) {
+							/*for(var i=0;i<observableUniverse.westnorth.length;i++) {
 								setOnMap(observableUniverse.westnorth[i], '#f00');
 							}
 							for(var i=0;i<observableUniverse.westsouth.length;i++) {
 								setOnMap(observableUniverse.westsouth[i], '#f00');
-							}
+							}*/
 							
 							// Already selected
-							for(var i=0;i<alreadySelectedPositions.north.length;i++) {
+							/*for(var i=0;i<alreadySelectedPositions.north.length;i++) {
 								setOnMap(alreadySelectedPositions.north[i], '#f0f');
 							}
 							for(var i=0;i<alreadySelectedPositions.south.length;i++) {
 								setOnMap(alreadySelectedPositions.south[i], '#f0f');
-							}
+							}*/
 							
 							// Define the 4 selected positions : either they are empty or not in the observable universe anymore
 							selectPositions();
 							for(var i=0; i<selectedPositions['north'].length; i++) {
 								setOnMap(selectedPositions['north'][i], '#ff0');
+								displayPoster('north',i);
+								linkMapAndPoster(selectedPositions['north'][i], 'north', i);
 							}
 							for(var i=0; i<selectedPositions['south'].length; i++) {
 								setOnMap(selectedPositions['south'][i], '#ff0');
+								displayPoster('south',i);
+								linkMapAndPoster(selectedPositions['south'][i], 'south', i);
 							}
 						  };
 						}
 					})
 				  .transition()
-					.each("end", transition);
+					.each("end", transition); //function() {console.log('end');});
 			}
 			
 			function displayLandmarks() {
@@ -378,6 +463,29 @@
 					};
 					path(city);
 					c.fill();
+				}
+			}
+			
+			function linkMapAndPoster(position, hemisphere, index) {
+				if(position && position.lng && position.lat) {
+					// The idea is to draw a stroke between position and the upper corner of the poster
+					var corner = {
+						"x": index ? diameter : 0,
+						"y": hemisphere=="north" ? 0 : southPosterY
+					};
+					c.strokeStyle = '#fff';
+					c.beginPath();
+					var city = {
+						type: "Feature",
+						properties: {},
+						geometry : {
+						  "type": "Point",
+						  "coordinates": [position.lng, position.lat]
+						}
+					};
+					path(city);
+					c.lineTo(corner.x, corner.y);
+					c.stroke();
 				}
 			}
 			
