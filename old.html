@@ -1,0 +1,502 @@
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>SISYphus</title>
+		<style>
+			html, body {
+				font-size: 12px;
+				font-family: Arial, Verdana;
+				background: #002 url("cosmos.jpg") no-repeat center center;
+			}
+		
+			.clear { clear: both; }
+			.left { float: left; }
+			.right { float: right; }
+			.poster{
+				background-color:#fff;
+				height: 40px;
+				padding: 5px;
+			}
+			.poster .left {
+				margin-right: 5px;
+				width: 40px;
+			}
+			.poster .right {
+				display: block;
+				margin-left: 5px;
+				overflow: hidden;
+				width: 140px;
+			}
+			.panel { width: 200px; }
+			.south {
+				position: absolute;
+				bottom: 0px;
+			}
+			
+			canvas {float:left}
+			
+			div#playground{
+				width: 750px;
+				height: 350px;
+				position: absolute;
+				top:0;
+				bottom: 0;
+				left: 0;
+				right: 0;
+				margin: auto;
+			}
+		</style>
+		<script src="http://d3js.org/d3.v3.min.js"></script>
+		<script src="http://d3js.org/queue.v1.min.js"></script>
+		<script src="http://d3js.org/topojson.v1.min.js"></script>
+	</head>
+	<body>
+		<div id="playground">
+			<div class="left panel">
+				<div class="poster north" id="north0">
+					<div class="left">
+						<a class="link" href="#" target="_blank"><img class="thumbnail" src="blank.gif" width="40" height="40"></a>
+					</div>
+					<div class="right"><a class="title" href="#" target="_blank"></a></div>
+					<div class="clear"></div>
+				</div>
+				<div class="poster south" id="south0">
+					<div class="left">
+						<a class="link" href="#" target="_blank"><img class="thumbnail" src="blank.gif" width="40" height="40"></a>
+					</div>
+					<div class="right"><a class="title" href="#" target="_blank"></a></div>
+					<div class="clear"></div>
+				</div>
+			</div>
+			<div class="right panel">
+				<div class="poster north" id="north1">
+					<div class="left">
+						<a class="link" href="#" target="_blank"><img class="thumbnail" src="blank.gif" width="40" height="40"></a>
+					</div>
+					<div class="right"><a class="title" href="#" target="_blank"></a></div>
+					<div class="clear"></div>
+				</div>
+				<div class="poster south" id="south1">
+					<div class="left">
+						<a class="link" href="#" target="_blank"><img class="thumbnail" src="blank.gif" width="40" height="40"></a>
+					</div>
+					<div class="right"><a class="title" href="#" target="_blank"></a></div>
+					<div class="clear"></div>
+				</div>
+			</div>
+		</div>
+		<script>
+			var userId = 'jujupiter';
+		
+			var diameter = 350,
+				width = diameter,
+				height = diameter,
+				x = 0,
+				y = 0,
+				posterWidth = 200,
+				posterHeight = 50,
+				southPosterY = (diameter-posterHeight);
+
+			var projection = d3.geo.orthographic()
+				.scale(diameter/2)
+				.translate([width / 2, height / 2])
+				.clipAngle(90);
+
+			var canvas = d3.select("div#playground").append("canvas")
+				.attr("width", width)
+				.attr("height", height);
+
+			var c = canvas.node().getContext("2d");
+
+			var path = d3.geo.path()
+				.projection(projection)
+				.context(c);
+				
+			var paused = false;
+			  
+			var index=0;
+			var knownLocations = [];
+			var unknownLocations = [];
+			var land = null;
+			var globe = {type: "Sphere"};
+			var albums = [];
+
+			queue()
+				.defer(d3.json, "political.json")
+				.defer(d3.json, "https://picasaweb.google.com/data/feed/api/user/"+userId+"?alt=json")
+				.defer(d3.json, "location.php?action=listing")
+				.await(ready);
+				
+			function ready(error, world, albums, loadedLocations) {
+			    knownLocations = loadedLocations.locations;
+			    land = topojson.feature(world, world.objects.land);
+			    albums = albums.feed.entry;
+			    for(var i=0; i<albums.length; i++) {
+					if(albums[i]['gphoto$location']['$t']!="") {
+						var isKnown = false;
+						for(var j=0; j<knownLocations.length; j++) {
+							if(knownLocations[j].name==albums[i]['gphoto$location']['$t']) {
+								isKnown = true;
+								if(!knownLocations[j].hasOwnProperty('albums')) {
+									knownLocations[j].albums = [];
+								}
+								knownLocations[j].albums.push(albums[i]);
+								break;
+							}
+						}
+						if(!isKnown && unknownLocations.indexOf(albums[i]['gphoto$location']['$t'])==-1) {
+							unknownLocations.push(albums[i]['gphoto$location']['$t']);
+						}
+					}
+			    }
+				if(unknownLocations.length > 0) {
+					// Start recurring calls to get all missing locations
+					d3.json("http://maps.google.com/maps/api/geocode/json?address="+unknownLocations[0], requestingCoordinates);
+				}
+				else {
+					// Display the globe
+					order();
+				}
+			}
+			
+			function requestingCoordinates(error, results) {
+			
+				if(error) console.error(error);
+				
+				// List matching albums
+				var matchingAlbums = [];
+				for(var i=0; i<albums.length; i++) {
+					if(unknownLocations[index]==albums[i]['gphoto$location']['$t']) {
+						matchingAlbums.push(albums[i]);
+					}
+				}
+				
+				// At least one result has been found
+				if(results.results.length>0) {
+					var tLng = results.results[0].geometry.location.lng;
+					var tLat = results.results[0].geometry.location.lat;
+					// Add to list of known locations
+					knownLocations.push({
+						name: unknownLocations[index],
+						// We only take the first result
+						lat: tLat,
+						lng: tLng,
+						invalid: false,
+						albums: matchingAlbums
+					});
+					// Save location into local database
+					d3.json("location.php?action=add&name="+unknownLocations[index]+"&lat="+tLat+"&lng="+tLng, function() {});
+				}
+				
+				// No match found, location is regarded as invalid
+				else {
+					knownLocations.push({
+						name: unknownLocations[index],
+						lat: null,
+						lng: null,
+						invalid: true,
+						albums: matchingAlbums
+					});
+					// Declare as invalid
+					d3.json("location.php?action=add&name="+unknownLocations[index]+"&lat=&lng=", function() {});
+				}
+				index++;
+				if(index+1>=unknownLocations.length) {
+					order();
+				}
+				else {
+					d3.json("http://maps.google.com/maps/api/geocode/json?address="+unknownLocations[index], requestingCoordinates);
+				}
+			}
+			
+			// Order cities by latitude and put those in the northern hemisphere in one array, those in the souther hemisphere in another array
+			var northHemisphere = [];
+			var southHemisphere = [];
+			
+			function order() {
+				for(var i=0; i<knownLocations.length; i++) {
+					if(!knownLocations[i].invalid && knownLocations[i].hasOwnProperty('albums') && knownLocations[i].albums.length>0) {
+						var target = null;
+						if(knownLocations[i].lat < 0) {
+							targetHemisphere = southHemisphere;
+						}
+						else {
+							targetHemisphere = northHemisphere;
+						}
+						// We order positions by longitude, thus we define the position where the city should be added
+						var position = 0;
+						for(var j=0; j<targetHemisphere.length; j++) {
+							if(targetHemisphere[j].lng < knownLocations[i].lng) {
+								position = j+1;
+							}
+							else {
+								break;
+							}
+						}
+						targetHemisphere.splice(position, 0, knownLocations[i]);
+					}
+				}
+				transition();
+			}
+			
+			var selectedPositions = {
+				north: [],
+				south: []
+			};
+			var alreadySelectedPositions = {
+				north: [],
+				south: []
+			};
+			
+			var observableUniverse = {
+				min: null,
+				max: null,
+				north: [],
+				south: [],
+				westnorth: [],
+				westsouth: [],
+				update: function() {
+					this.min = 90-x;
+					this.max = 270-x;
+					this.north = this.filter(northHemisphere);
+					this.south = this.filter(southHemisphere);
+					this.westnorth = this.westFilter(northHemisphere);
+					this.westsouth = this.westFilter(southHemisphere);
+				},
+				isVisible: function(lng) {
+					return (lng <= this.min || lng >= this.max);
+				},
+				filter: function(hemisphere) {
+					var filtered = [];
+					for(var i=0; i<hemisphere.length; i++) {
+						if(observableUniverse.isVisible(hemisphere[i].lng)) {
+							filtered.push(hemisphere[i]);
+						}
+					}
+					return filtered;
+				},
+				westFilter: function(hemisphere) {
+					var filtered = [];
+					for(var i=0; i<hemisphere.length; i++) {
+						var lag = hemisphere[i].lng + x;
+						if((lag < 0 && lag > -90) || (lag > 270 && lag < 360)) {
+							filtered.push(hemisphere[i]);
+						}
+					}
+					return filtered;
+				}
+			};
+			
+			function isFarEnough(hemisphere, position) {
+				for(var i=0;i<selectedPositions[hemisphere].length; i++) {
+					if(selectedPositions[hemisphere][i] && !( (position.lng > selectedPositions[hemisphere][i].lng+25) || (position.lng < selectedPositions[hemisphere][i].lng-25) )) {
+						return false;
+					}
+				}
+				return true;
+			}
+			
+			function isSelected(hemisphere, position) {
+				for(var i=0;i<selectedPositions[hemisphere].length; i++) {
+					if(selectedPositions[hemisphere][i]==position) {
+						return true;
+					}
+				}
+				return false;
+			}
+			
+			function hasAlreadyBeenSelected(hemisphere, position) {
+				for(var i=0;i<alreadySelectedPositions[hemisphere].length; i++) {
+					if(alreadySelectedPositions[hemisphere][i]==position) {
+						return true;
+					}
+				}
+				return false;
+			}
+			
+			function flushAlreadyBeenSelected() {
+				if(alreadySelectedPositions.north.length >= northHemisphere.length) {
+					alreadySelectedPositions.north = [];
+				}
+				if(alreadySelectedPositions.south.length >= southHemisphere.length) {
+					alreadySelectedPositions.south = [];
+				}
+			}
+			
+			function selectPositions() {
+				selectPosition('north', 0);
+				selectPosition('north', 1);
+				selectPosition('south', 0);
+				selectPosition('south', 1);
+			}
+			
+			function selectPosition(hemisphere, index) {
+				if(selectedPositions[hemisphere][index] && !observableUniverse.isVisible(selectedPositions[hemisphere][index].lng)) {
+					selectedPositions[hemisphere][index] = null;
+				}
+				if(!selectedPositions[hemisphere][index]) {
+					// Pick randomly a position
+					var pool = observableUniverse['west'+hemisphere];
+					if(pool.length>0) {
+						var newIndex = Math.floor(Math.random()*(pool.length));
+						if(newIndex==pool.length) {
+							newIndex--;
+						}
+						if(isFarEnough(hemisphere, pool[newIndex]) && !hasAlreadyBeenSelected(hemisphere, pool[newIndex])) {
+							selectedPositions[hemisphere][index] = pool[newIndex];
+							alreadySelectedPositions[hemisphere].push(pool[newIndex]);
+						}
+						else {
+							selectedPositions[hemisphere][index] = null;
+						}
+					}
+				}
+			}
+			
+			function displayPoster(hemisphere, index) {
+				var poster = d3.select('div#'+hemisphere+index);
+				if(selectedPositions[hemisphere][index]) {
+					poster.style('visibility', 'visible');
+					var albumProp = selectedPositions[hemisphere][index].albums[0];
+					var title = d3.select('div#'+hemisphere+index+' a.title')[0][0];
+					d3.select('div#'+hemisphere+index+' a.link')[0][0].href = title.href = albumProp.link[1].href;
+					d3.select('div#'+hemisphere+index+' img.thumbnail')[0][0].src = albumProp.media$group.media$thumbnail[0].url;
+					title.innerText = albumProp.title.$t;
+				}
+				else {
+					poster.style('visibility', 'hidden');
+					d3.select('div#'+hemisphere+index+' img.thumbnail')[0][0].src = 'blank.gif';
+				}
+			}
+			
+			function transition() {
+				d3.transition()
+					.duration(30)
+					.tween("rotate", function() {
+						if(!paused) {
+						  x += 1;
+						  if(x>360) {
+							x = 0;
+						  }
+						  observableUniverse.update();
+						  flushAlreadyBeenSelected();
+						  var r = d3.interpolate(projection.rotate(), [x, y]);
+						  // 2. Compute top items, left and right (right becomes left when left is out of range and right is determines as longitude is bigger than left's longitude and in the visuable range)
+						  // 3. Compute bottoms items, left and right (right becomes left when left disappears and right is determines as longitude is bigger than left's longitude and in the visuable range)
+						  return function(t) {
+							projection.rotate(r(t));
+							c.clearRect(0, 0, width, height);
+							// Sea
+							c.fillStyle = '#111177';
+							c.beginPath();
+							c.arc(width/2, height/2, height/2, 0, 2 * Math.PI, false);
+							c.fill();
+							// Land
+							c.fillStyle = "#55ee22";
+							c.beginPath();
+							path(land);
+							c.fill();
+							// Landmarks
+							//displayLandmarks();
+							
+							// West
+							/*for(var i=0;i<observableUniverse.westnorth.length;i++) {
+								setOnMap(observableUniverse.westnorth[i], '#f00');
+							}
+							for(var i=0;i<observableUniverse.westsouth.length;i++) {
+								setOnMap(observableUniverse.westsouth[i], '#f00');
+							}*/
+							
+							// Already selected
+							/*for(var i=0;i<alreadySelectedPositions.north.length;i++) {
+								setOnMap(alreadySelectedPositions.north[i], '#f0f');
+							}
+							for(var i=0;i<alreadySelectedPositions.south.length;i++) {
+								setOnMap(alreadySelectedPositions.south[i], '#f0f');
+							}*/
+							
+							// Define the 4 selected positions : either they are empty or not in the observable universe anymore
+							selectPositions();
+							for(var i=0; i<selectedPositions['north'].length; i++) {
+								setOnMap(selectedPositions['north'][i], '#ff0');
+								displayPoster('north',i);
+								linkMapAndPoster(selectedPositions['north'][i], 'north', i);
+							}
+							for(var i=0; i<selectedPositions['south'].length; i++) {
+								setOnMap(selectedPositions['south'][i], '#ff0');
+								displayPoster('south',i);
+								linkMapAndPoster(selectedPositions['south'][i], 'south', i);
+							}
+						  };
+						}
+					})
+				  .transition()
+					.each("end", transition); //function() {console.log('end');});
+			}
+			
+			function displayLandmarks() {
+				c.strokeStyle = "#0ff";
+				c.beginPath();
+				c.moveTo(width/2, 0);
+				c.lineTo(width/2, height);
+				c.stroke();
+				c.beginPath();
+				c.moveTo(0, height/2);
+				c.lineTo(width, height/2);
+				c.stroke();
+			}
+			
+			function setOnMap(position, color) {
+				if(position && position.lng && position.lat) {
+					if(!color) {
+						color = "#fff";
+					}
+					c.fillStyle = color;
+					c.beginPath();
+					var city = {
+						type: "Feature",
+						properties: {},
+						geometry : {
+						  "type": "Point",
+						  "coordinates": [position.lng, position.lat]
+						}
+					};
+					path(city);
+					c.fill();
+				}
+			}
+			
+			function linkMapAndPoster(position, hemisphere, index) {
+				if(position && position.lng && position.lat) {
+					// The idea is to draw a stroke between position and the upper corner of the poster
+					var corner = {
+						"x": index ? diameter : 0,
+						"y": hemisphere=="north" ? 0 : southPosterY
+					};
+					c.strokeStyle = '#fff';
+					c.beginPath();
+					var city = {
+						type: "Feature",
+						properties: {},
+						geometry : {
+						  "type": "Point",
+						  "coordinates": [position.lng, position.lat]
+						}
+					};
+					path(city);
+					c.lineTo(corner.x, corner.y);
+					c.stroke();
+				}
+			}
+			
+			function isVisible(lng, name) {
+				return (x+lng<=90 || x+lng>=270);
+			}
+			
+			function pause() {
+				paused = !paused;
+			}
+		</script>
+		<a href="javascript:pause()">Pause</a>
+	</body>
+</html>

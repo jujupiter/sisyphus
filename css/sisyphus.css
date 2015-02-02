@@ -1,0 +1,22 @@
+html, body {
+	font-size: 12px;
+	font-family: Arial, Verdana;
+	background: #002 url("../img/cosmos.jpg") no-repeat center center;
+}
+
+.clear { clear: both; }
+.left { float: left; }
+.right { float: right; }
+
+canvas {float:left}
+
+div#playground{
+	width: 350px;
+	height: 350px;
+	position: absolute;
+	top:0;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	margin: auto;
+}
