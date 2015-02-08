@@ -13,10 +13,11 @@
 	</head>
 	<body>
 		<div id="playground"></div>
+		<a class="pauser">Pause</a>
 		<script type="text/javascript">
 			var userId = 'jujupiter';
 			var paused = false;
-			var globe = new Globe('div#playground', 350, 0, 0, 0);
+			var globe = new Globe('div#playground', 350, 20, 0, 0);
 
 			queue()
 				.defer(d3.json, "json/political.json")
@@ -26,28 +27,32 @@
 			
 			function locationsReady() {
 				if(!globe.locations.containsItemWith('known', false)) {
+					globe.removeEmptyLocations();
 					globe.display();
 				}
 			}
 			
-			function ready(error, world, albums, loadedLocations) {			
-				globe.locations = Location.defineLocationList(loadedLocations.locations);
+			function ready(error, world, albums, loadedLocations) {
+				globe.defineLocationList(loadedLocations.locations);
 			    globe.land = topojson.feature(world, world.objects.land);
 			    var albums = albums.feed.entry;
 			    for(var i=0; i<albums.length; i++) {
 					if(albums[i]['gphoto$location']['$t']!="") {
 						var index = globe.locations.getIndexBy('name', albums[i]['gphoto$location']['$t']);
-						console.log(albums[i]['gphoto$location']['$t'], index);
 						// If the location is not known, add it
 						if(index==-1) {
 							globe.locations.push(new Location(albums[i]['gphoto$location']['$t'], null, null, false, null));
 							index = globe.locations.getIndexBy('name', albums[i]['gphoto$location']['$t']);
 						}
-						globe.locations[index].albums.push(albums[i]);
+						globe.locations[index].albums.push(new Album(albums[i]));
 					}
 			    }
 				globe.locations.callMethodForAll('known', false, 'requestCoordinates', locationsReady);
 			}
+			
+			d3.select('.pauser').on('click', function() {
+				paused = !paused;
+			});
 		</script>
 	</body>
 </html>

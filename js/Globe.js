@@ -29,7 +29,38 @@ var Globe = function(selector, diameter, margin, x, y) {
 		.context(this.context);
 		
 	this.land = null;
-	this.locations = null;
+	this.locations = [];
+	
+
+	/**
+	 * Define the array of Location objects from locations known by the server
+	 * @param {Array} dataArray Data returned by server
+	 * @return {Array}
+	 */
+	this.defineLocationList = function(dataArray) {
+		for(var i=0; i<dataArray.length; i++) {
+			this.locations.push(new Location(dataArray[i].name, dataArray[i].lat, dataArray[i].lng, true, dataArray[i].invalid, this));
+		}
+	};
+	
+	/**
+	 * Remove locations with no albums
+	 */
+	this.removeEmptyLocations = function() {
+		for(var i=0; i<this.locations.length; i++) {
+			if(!this.locations[i].albums.length) {
+				this.locations.splice(i, 1);
+			}
+		}
+	};
+	
+	/**
+	 * Is the position visible ?
+	 * @param {Number} lng Longitude
+	 */
+	this.isVisible = function(lng) {
+		return (lng <= (90-this.dimensions.x) || lng >= (270-this.dimensions.x));
+	};
 	
 	/**
 	 * Trace the globe
@@ -49,36 +80,35 @@ var Globe = function(selector, diameter, margin, x, y) {
 		c.beginPath();
 		this.path(this.land);
 		c.fill();
-	};
+		// Locations
+		/*for(var i=0; i<this.locations.length; i++) {
+			this.locations[i].show(c, this.path);
+		}*/
+		this.locations[0].show(c, this);
+	}.bind(this);
 	
 	/**
 	 * Rotate the globe
 	 */
 	this.rotate = function() {
-		console.log('rotate', paused, this.dimensions);
 		if(!paused) {
 			this.dimensions.x += 1;
 			if(this.dimensions.x>360) {
 				this.dimensions.x = 0;
 			}
-			return this.trace.bind(this);
+			return this.trace;
 		}
-	};
-	
-	this.bindedRotate = this.rotate.bind(this);
+	}.bind(this);
 	
 	/**
 	 * Display the globe according to 
 	 */
 	this.display = function() {
-		console.log('display', this.rotate, this.display);
 		d3.transition()
 			.duration(30)
-			.tween("rotate", this.bindedRotate)
+			.tween("rotate", this.rotate)
 		  .transition()
-			.each("end", this.bindedDisplay);
-	};
-	
-	this.bindedDisplay = this.display.bind(this);
+			.each("end", this.display);
+	}.bind(this);
 	
 };

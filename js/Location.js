@@ -6,11 +6,15 @@
  * @constructor
  * @param {Object} data
  */
-var Location = function(name, lat, lng, known, invalid) {
+var Location = function(name, lat, lng, known, invalid, globe) {
 
 	this.name = name;
 	this.lat = lat;
 	this.lng = lng;
+	this.x = null;
+	this.y = null;
+	
+	this.globe = globe;
 	
 	this.known = known;
 	if(known) {
@@ -24,6 +28,7 @@ var Location = function(name, lat, lng, known, invalid) {
 	
 	this.albums = [];
 	this.albumIndex = null;
+	this.thumbnail = null;
 	
 	/**
 	 * Request coordinates for location from Google
@@ -62,7 +67,7 @@ var Location = function(name, lat, lng, known, invalid) {
 			this.invalid = true;
 		}
 		// Save result into local database
-		d3.json("location.php?action=add&name="+this.name+"&lat="+this.tLng+"&lng="+this.tLat, function() {});
+		d3.json("location.php?action=add&name="+this.name+"&lng="+this.tLng+"&lat="+this.tLat, function() {});
 		
 		this.callback();
 		this.callback = null;
@@ -70,19 +75,64 @@ var Location = function(name, lat, lng, known, invalid) {
 	};
 	
 	/**
-	 * Show location with an album
-	 * TODO
+	 * Is the location currently visible on the globe ?
+	 * @return {Boolean}
 	 */
-	this.show = function() {
-		// Select an album to show
+	this.isVisible = function() {
+		return this.globe.isVisible(this.lng);
+	};
+	
+	/**
+	 * Show location with an album
+	 * @param {Object} c Canvas context
+	 * @param {Object} globe Globe
+	 */
+	this.show = function(c, globe) {
 		
-		// Display
+		if(this.isVisible()) {
 		
-		// Set album properties
-		this.albums[this.albumIndex].visible = true;
-		this.albums[this.albumIndex].seen = true;
-		// Have all albums for this location been seen now ?
-		this.allSeen = this.getAllSeenAlbums();
+			// Select an album to show
+			this.albumIndex = 0; //Math.floor((Math.random() * this.albums.length));
+			
+			// Thumbnail
+			var coords = globe.projection([this.lng, this.lat]);
+			this.x = coords[0];
+			this.y = coords[1];
+			var ratio = 1 - (32/globe.dimensions.width); // Slide the thumbnail around the dot
+			
+			if(!this.thumbnail || this.thumbnail.src != this.albums[this.albumIndex].thumbnail) {
+				this.thumbnail = new Image();
+				this.thumbnail.onload = function() {
+					c.drawImage(this, this.x*ratio, this.y, 32, 32);
+				};
+				this.thumbnail.src = this.albums[this.albumIndex].thumbnail;
+			}
+			else {
+				c.drawImage(this.thumbnail, this.x*ratio, this.y, 32, 32);
+			}
+			
+			// Display the dot
+			c.fillStyle = '#fff';
+			c.beginPath();
+			var city = {
+				type: "Feature",
+				properties: {},
+				geometry : {
+				  "type": "Point",
+				  "coordinates": [this.lng, this.lat]
+				}
+			};
+			globe.path(city);
+			c.fill();
+			
+			// Set album properties
+			this.albums[this.albumIndex].visible = true;
+			this.albums[this.albumIndex].seen = true;
+			// Have all albums for this location been seen now ?
+			this.allSeen = this.getAllSeenAlbums();
+		
+		}
+		
 	};
 	
 	/**
@@ -115,19 +165,6 @@ var Location = function(name, lat, lng, known, invalid) {
 		}
 	};
 
-};
-
-/**
- * Define the array of Location objects from locations known by the server
- * @param {Array} dataArray Data returned by server
- * @return {Array}
- */
-Location.defineLocationList = function(dataArray) {
-	var ret = [];
-	for(var i=0; i<dataArray.length; i++) {
-		ret.push(new Location(dataArray[i].name, dataArray[i].lat, dataArray[i].lng, true, dataArray[i].invalid));
-	}
-	return ret;
 };
 
 /**

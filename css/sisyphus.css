@@ -8,6 +8,8 @@ html, body {
 .left { float: left; }
 .right { float: right; }
 
+.pauser{ color: #fff; }
+
 canvas {float:left}
 
 div#playground{
