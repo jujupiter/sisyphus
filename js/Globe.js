@@ -57,9 +57,11 @@ var Globe = function(selector, diameter, margin, x, y) {
 	/**
 	 * Is the position visible ?
 	 * @param {Number} lng Longitude
+	 * @param {Number} lat Latitude
 	 */
-	this.isVisible = function(lng) {
-		return (lng <= (90-this.dimensions.x) || lng >= (270-this.dimensions.x));
+	this.isVisible = function(lng, lat) {
+		var geoangle = d3.geo.distance([lng, lat], [-this.projection.rotate()[0], this.projection.rotate()[1]]);
+		return (geoangle < Math.PI/2);
 	};
 	
 	/**

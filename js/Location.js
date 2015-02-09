@@ -79,7 +79,7 @@ var Location = function(name, lat, lng, known, invalid, globe) {
 	 * @return {Boolean}
 	 */
 	this.isVisible = function() {
-		return this.globe.isVisible(this.lng);
+		return this.globe.isVisible(this.lng, this.lat);
 	};
 	
 	/**
