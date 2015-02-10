@@ -6,6 +6,17 @@
 		<script src="http://d3js.org/d3.v3.min.js"></script>
 		<script src="http://d3js.org/queue.v1.min.js"></script>
 		<script src="http://d3js.org/topojson.v1.min.js"></script>
+		<script type="text/javascript">
+			var Settings = {
+				userId: 'jujupiter',
+				thumbnail: {
+					size: 40,
+					border: 1
+				},
+				diameter: 350,
+				margin: 0
+			};
+		</script>
 		<script src="js/Array.prototype.js"></script>
 		<script src="js/Globe.js"></script>
 		<script src="js/Location.js"></script>
@@ -15,13 +26,17 @@
 		<div id="playground"></div>
 		<a class="pauser">Pause</a>
 		<script type="text/javascript">
-			var userId = 'jujupiter';
+			
+			// Automated settings, do not change
+			Settings.thumbnail.effectiveSize = (Settings.thumbnail.border * 2) + Settings.thumbnail.size;
+			Settings.thumbnail.ratio = 1 - (Settings.thumbnail.effectiveSize / Settings.diameter);
+			
 			var paused = false;
-			var globe = new Globe('div#playground', 350, 20, 0, 0);
+			var globe = new Globe('div#playground', Settings.diameter, Settings.margin, 0, 0);
 
 			queue()
 				.defer(d3.json, "json/political.json")
-				.defer(d3.json, "https://picasaweb.google.com/data/feed/api/user/"+userId+"?alt=json")
+				.defer(d3.json, "https://picasaweb.google.com/data/feed/api/user/"+Settings.userId+"?alt=json")
 				.defer(d3.json, "location.php?action=listing")
 				.await(ready);
 			

@@ -15,4 +15,14 @@ var Album = function(data) {
 	this.visible = false;
 	this.seen = false;
 	
+	this.anchor = d3.select("body").append("a")
+		.attr("href", this.link)
+		.attr("target", "_blank");
+		
+	this.launchAlbum = function() {
+		if(this.anchor[0][0]) {
+			this.anchor[0][0].click();
+		}
+	}.bind(this);
+	
 };

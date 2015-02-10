@@ -31,6 +31,20 @@ var Globe = function(selector, diameter, margin, x, y) {
 	this.land = null;
 	this.locations = [];
 	
+	/**
+	 * Click event listener : the globe reacts to clicks
+	 * @param {Object} e The event
+	 */
+	 this.canvas.on('click', function() {
+		for(var i=0; i<globe.locations.length; i++) {
+			if(globe.locations[i].shown && globe.locations[i].matchesClick(d3.event.offsetX, d3.event.offsetY)) {
+				globe.locations[i].launchAlbum();
+				return true;
+			}
+		}
+		return false;
+	});
+	
 
 	/**
 	 * Define the array of Location objects from locations known by the server
@@ -55,13 +69,21 @@ var Globe = function(selector, diameter, margin, x, y) {
 	};
 	
 	/**
+	 * Help determine the distance from the center
+	 * @param {Number} lng Longitude
+	 * @param {Number} lat Latitude
+	 */
+	this.getGeoAngle = function(lng, lat) {
+		return d3.geo.distance([lng, lat], [-this.projection.rotate()[0], this.projection.rotate()[1]]);
+	};
+	
+	/**
 	 * Is the position visible ?
 	 * @param {Number} lng Longitude
 	 * @param {Number} lat Latitude
 	 */
 	this.isVisible = function(lng, lat) {
-		var geoangle = d3.geo.distance([lng, lat], [-this.projection.rotate()[0], this.projection.rotate()[1]]);
-		return (geoangle < Math.PI/2);
+		return (Math.PI/2 - this.getGeoAngle(lng, lat)) > 0;
 	};
 	
 	/**
@@ -87,6 +109,7 @@ var Globe = function(selector, diameter, margin, x, y) {
 			this.locations[i].show(c, this.path);
 		}*/
 		this.locations[0].show(c, this);
+		this.locations[59].show(c, this);
 	}.bind(this);
 	
 	/**

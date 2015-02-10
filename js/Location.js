@@ -24,7 +24,7 @@ var Location = function(name, lat, lng, known, invalid, globe) {
 		this.invalid = null;
 	}
 	
-	this.visible = false;
+	this.shown = false;
 	
 	this.albums = [];
 	this.albumIndex = null;
@@ -83,32 +83,53 @@ var Location = function(name, lat, lng, known, invalid, globe) {
 	};
 	
 	/**
+	 * Return coordinates of the top left (starting point) of a thumbnail
+	 * @return {Object}
+	 */
+	this.getTopLeft = function() {
+		return {
+			x: this.x*Settings.thumbnail.ratio,
+			y: this.y
+		};
+	};
+	
+	/**
 	 * Show location with an album
 	 * @param {Object} c Canvas context
 	 * @param {Object} globe Globe
 	 */
 	this.show = function(c, globe) {
 		
-		if(this.isVisible()) {
+		// Select an album to show
+		this.albumIndex = 0; //Math.floor((Math.random() * this.albums.length));
 		
-			// Select an album to show
-			this.albumIndex = 0; //Math.floor((Math.random() * this.albums.length));
+		if(this.isVisible()) {
+			
+			var thumbSize = Settings.thumbnail.size;
+			var thumbBorder = Settings.thumbnail.border;
 			
 			// Thumbnail
 			var coords = globe.projection([this.lng, this.lat]);
 			this.x = coords[0];
 			this.y = coords[1];
-			var ratio = 1 - (32/globe.dimensions.width); // Slide the thumbnail around the dot
+			var ratio = Settings.thumbnail.ratio;
+			
+			var appliedCoordinates = this.getTopLeft();
+			
+			c.beginPath();
+			c.fillStyle = '#fff';
+			c.rect(appliedCoordinates.x, appliedCoordinates.y, Settings.thumbnail.effectiveSize, Settings.thumbnail.effectiveSize);
+			c.fill();
 			
 			if(!this.thumbnail || this.thumbnail.src != this.albums[this.albumIndex].thumbnail) {
 				this.thumbnail = new Image();
 				this.thumbnail.onload = function() {
-					c.drawImage(this, this.x*ratio, this.y, 32, 32);
+					c.drawImage(this, thumbBorder+appliedCoordinates.x, thumbBorder+appliedCoordinates.y, thumbSize, thumbSize);
 				};
 				this.thumbnail.src = this.albums[this.albumIndex].thumbnail;
 			}
 			else {
-				c.drawImage(this.thumbnail, this.x*ratio, this.y, 32, 32);
+				c.drawImage(this.thumbnail, thumbBorder+appliedCoordinates.x, thumbBorder+appliedCoordinates.y, thumbSize, thumbSize);
 			}
 			
 			// Display the dot
@@ -125,23 +146,41 @@ var Location = function(name, lat, lng, known, invalid, globe) {
 			globe.path(city);
 			c.fill();
 			
+			this.shown = true;
 			// Set album properties
-			this.albums[this.albumIndex].visible = true;
+			this.albums[this.albumIndex].shown = true;
 			this.albums[this.albumIndex].seen = true;
 			// Have all albums for this location been seen now ?
 			this.allSeen = this.getAllSeenAlbums();
 		
 		}
+		else {
+			this.shown = false;
+			this.albums[this.albumIndex].shown = false;
+		}
 		
 	};
 	
 	/**
-	 * Hide location
-	 * TODO
+	 * Location matches click
+	 * @param {Number} mouseX
+	 * @param {Number} mouseY
 	 */
-	this.hide = function() {
-		// Hide
-		this.albums[this.albumIndex].visible = false;
+	this.matchesClick = function(mouseX, mouseY) {
+		var appliedCoordinates = this.getTopLeft();
+		var okX = (mouseX > appliedCoordinates.x && mouseX < (appliedCoordinates.x + Settings.thumbnail.effectiveSize));
+		var okY = (mouseY > appliedCoordinates.y && mouseY < (appliedCoordinates.y + Settings.thumbnail.effectiveSize));
+		return okX && okY;
+	};
+	
+	/**
+	 * Launch select album
+	 */
+	this.launchAlbum = function() {
+		if(this.albumIndex!==null && this.albums[this.albumIndex] && this.albums[this.albumIndex].shown) {
+			console.log("hey");
+			this.albums[this.albumIndex].launchAlbum();
+		}
 	};
 	
 	/**
