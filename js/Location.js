@@ -140,8 +140,6 @@ var Location = function(name, lat, lng, known, invalid, globe) {
 			
 			// Then and only then can we show the location
 			if(null!==this.albumIndex) {
-				
-				console.log(this.x, this.y);
 			
 				var c = this.globe.context;
 				var thumbSize = Settings.thumbnail.size;
@@ -278,9 +276,11 @@ var Location = function(name, lat, lng, known, invalid, globe) {
 	 * @return {Boolean}
 	 */
 	this.doesOverlap = function(otherLocation) {
+		var thisMinY = this.y;
+		var thisMaxY = this.y + Settings.thumbnail.effectiveSize;
 		var otherMinY = otherLocation.y;
 		var otherMaxY = otherLocation.y + Settings.thumbnail.effectiveSize;
-		return (this.y >= otherMinY && this.y <= otherMaxY);
+		return (thisMinY >= otherMinY && thisMinY <= otherMaxY) || (otherMinY >= thisMinY && otherMinY <= thisMaxY);
 	};
 
 	/**
@@ -291,7 +291,6 @@ var Location = function(name, lat, lng, known, invalid, globe) {
 	this.doesOverlapThese = function(otherLocations) {
 		for(var i=0; i<otherLocations.length; i++) {
 			if(this.doesOverlap(otherLocations[i])) {
-				console.log(this.name+' overlaps '+otherLocations[i].name);
 				return true;
 			}
 		}
