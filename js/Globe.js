@@ -121,26 +121,46 @@ var Globe = function(selector, diameter, margin, x, y) {
 	 * Trace the globe
 	 */
 	this.trace = function(t) {
+		
 		var r = d3.interpolate(this.projection.rotate(), [this.dimensions.x, this.dimensions.y]);
 		var c = this.context;
 		this.projection.rotate(r(t));
 		c.clearRect(0, 0, this.dimensions.width, this.dimensions.height);
+		
 		// Sea
 		c.fillStyle = '#111177';
 		c.beginPath();
 		c.arc(this.dimensions.width/2, this.dimensions.height/2, this.dimensions.height/2, 0, 2 * Math.PI, false);
 		c.fill();
+		
 		// Land
 		c.fillStyle = "#55ee22";
 		c.beginPath();
 		this.path(this.land);
 		c.fill();
+		
 		// Locations
-		/*for(var i=0; i<this.locations.length; i++) {
-			this.locations[i].show(c, this.path);
-		}*/
-		this.locations[0].show(c, this);
-		this.locations[59].show(c, this);
+		// Get the number of currently shown locations and trigger their display function
+		var count = 0;
+		console.log('-----');
+		for(var i=0; i<this.locations.length; i++) {
+			if(this.locations[i].shown) {
+				console.log(this.locations[i].name);
+				this.locations[i].show();
+				count++;
+			}
+		}
+		// If we have less than 3 locations displayed, find as many as necessary
+		for(var i=0; (i<this.locations.length && count<3); i++) {
+			if(this.locations[i].isVisible() && !this.locations[i].shown) {
+				console.log(this.locations[i].name);
+				this.locations[i].shown = true;
+				this.locations[i].show();
+				count++;
+			}
+		}
+		
+		
 	}.bind(this);
 	
 	/**

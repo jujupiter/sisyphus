@@ -95,21 +95,20 @@ var Location = function(name, lat, lng, known, invalid, globe) {
 	
 	/**
 	 * Show location with an album
-	 * @param {Object} c Canvas context
-	 * @param {Object} globe Globe
 	 */
-	this.show = function(c, globe) {
+	this.show = function() {
 		
 		// Select an album to show
 		this.albumIndex = 0; //Math.floor((Math.random() * this.albums.length));
 		
 		if(this.isVisible()) {
 			
+			var c = this.globe.context;
 			var thumbSize = Settings.thumbnail.size;
 			var thumbBorder = Settings.thumbnail.border;
 			
 			// Thumbnail
-			var coords = globe.projection([this.lng, this.lat]);
+			var coords = this.globe.projection([this.lng, this.lat]);
 			this.x = coords[0];
 			this.y = coords[1];
 			var ratio = Settings.thumbnail.ratio;
@@ -143,7 +142,7 @@ var Location = function(name, lat, lng, known, invalid, globe) {
 				  "coordinates": [this.lng, this.lat]
 				}
 			};
-			globe.path(city);
+			this.globe.path(city);
 			c.fill();
 			
 			// Display album info ?
