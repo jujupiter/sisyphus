@@ -59,13 +59,19 @@ var Globe = function(selector, diameter, margin, x, y) {
 	 * @param {Number} mouseY Y coordinate of the mouse on the canvas
 	 */
 	this.detectMouse = function(show, mouseX, mouseY) {
+		var matchesOne = false;
 		for(var i=0; i<this.locations.length; i++) {
 			if(show && this.locations[i].shown && this.locations[i].matchesPoint(mouseX, mouseY)) {
+				matchesOne = true;
+				this.canvas.style({cursor:'pointer'});
 				this.locations[i].displayInfo();
 			}
 			else {
 				this.locations[i].hideInfo();
 			}
+		}
+		if(!matchesOne) {
+			this.canvas.style({cursor:null});
 		}
 	}.bind(this);
 	
