@@ -20,7 +20,7 @@ var Globe = function(selector, diameter, margin, x, y) {
 		.scale(this.dimensions.diameter/2)
 		.translate([this.dimensions.width / 2, this.dimensions.height / 2])
 		.clipAngle(90);
-	this.canvas =  d3.select(this.selector).append("canvas")
+	this.canvas =  d3.select(this.selector+' canvas')
 		.attr("width", this.dimensions.width)
 		.attr("height", this.dimensions.height);
 	this.context = this.canvas.node().getContext("2d");

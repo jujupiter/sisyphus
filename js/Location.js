@@ -147,16 +147,15 @@ var Location = function(name, lat, lng, known, invalid, globe) {
 			c.fill();
 			
 			// Display album info ?
+			var selection = d3.select('div#poster');
 			if(this.albumInfoShown) {
-				if(!this.poster) {
-					this.poster = d3.select("body").append("div").attr("class", "poster").text(this.albums[this.albumIndex].title);
-				}
-				var direction = (this.x > this.globe.dimensions.diameter/2) ? -1 : 1;
+				selection.style({display:'block'});
+				selection.select('div#locationName').text(this.name);
+				selection.select('div#albumTitle').text(this.albums[this.albumIndex].title);
 			}
 			else {
-				if(this.poster) {
-					this.poster.remove();
-					this.poster = null;
+				if(selection.select('div#locationName').text()==this.name) {
+					selection.style({display:'none'});
 				}
 			}
 			
