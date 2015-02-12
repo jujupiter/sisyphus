@@ -35,10 +35,18 @@ var Globe = function(selector, diameter, margin, x, y) {
 	 * Click event listener : the globe reacts to clicks
 	 */
 	 this.canvas.on('click', function() {
-		for(var i=0; i<globe.locations.length; i++) {
-			if(globe.locations[i].shown && globe.locations[i].matchesMouse(d3.event.offsetX, d3.event.offsetY)) {
-				globe.locations[i].launchAlbum();
-				return true;
+		// First, check what is in "currentlyShown" (to persist if the album thumbnail has gone away too fast)
+		if(currentlyShown) {
+			currentlyShown.launchAlbum();
+			return true;
+		}
+		// Else, find the location matching the mouse cursor
+		else {
+			for(var i=0; i<globe.locations.length; i++) {
+				if(globe.locations[i].shown && globe.locations[i].matchesMouse(d3.event.offsetX, d3.event.offsetY)) {
+					globe.locations[i].launchAlbum();
+					return true;
+				}
 			}
 		}
 		return false;
@@ -86,6 +94,7 @@ var Globe = function(selector, diameter, margin, x, y) {
 		for(var i=0; i<dataArray.length; i++) {
 			this.locations.push(new Location(dataArray[i].name, dataArray[i].lat, dataArray[i].lng, true, dataArray[i].invalid, this));
 		}
+		this.locations.shuffle();
 	};
 	
 	/**
@@ -142,18 +151,15 @@ var Globe = function(selector, diameter, margin, x, y) {
 		// Locations
 		// Get the number of currently shown locations and trigger their display function
 		var count = 0;
-		console.log('-----');
 		for(var i=0; i<this.locations.length; i++) {
 			if(this.locations[i].shown) {
-				console.log(this.locations[i].name);
 				this.locations[i].show();
 				count++;
 			}
 		}
 		// If we have less than 3 locations displayed, find as many as necessary
 		for(var i=0; (i<this.locations.length && count<3); i++) {
-			if(this.locations[i].isVisible() && !this.locations[i].shown) {
-				console.log(this.locations[i].name);
+			if(this.locations[i].isVisible() && !this.locations[i].shown && !this.locations[i].allSeen) {
 				this.locations[i].shown = true;
 				this.locations[i].show();
 				count++;

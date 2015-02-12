@@ -190,6 +190,7 @@ var Location = function(name, lat, lng, known, invalid, globe) {
 	 */
 	this.displayInfo = function() {
 		this.albumInfoShown = true;
+		currentlyShown = this.albums[this.albumIndex];
 	};
 	
 	/**
