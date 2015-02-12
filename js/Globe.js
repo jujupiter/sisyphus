@@ -33,16 +33,47 @@ var Globe = function(selector, diameter, margin, x, y) {
 	
 	/**
 	 * Click event listener : the globe reacts to clicks
-	 * @param {Object} e The event
 	 */
 	 this.canvas.on('click', function() {
 		for(var i=0; i<globe.locations.length; i++) {
-			if(globe.locations[i].shown && globe.locations[i].matchesClick(d3.event.offsetX, d3.event.offsetY)) {
+			if(globe.locations[i].shown && globe.locations[i].matchesMouse(d3.event.offsetX, d3.event.offsetY)) {
 				globe.locations[i].launchAlbum();
 				return true;
 			}
 		}
 		return false;
+	});
+	
+	/**
+	 * Display info if mouse is over location
+	 * @param {Boolean} show Instruct to show or hide info of locations
+	 * @param {Number} mouseX X coordinate of the mouse on the canvas
+	 * @param {Number} mouseY Y coordinate of the mouse on the canvas
+	 */
+	this.detectMouse = function(show, mouseX, mouseY) {
+		for(var i=0; i<this.locations.length; i++) {
+			if(show && this.locations[i].shown && this.locations[i].matchesMouse(mouseX, mouseY)) {
+				this.locations[i].displayInfo();
+			}
+			else {
+				this.locations[i].hideInfo();
+			}
+		}
+	}.bind(this);
+	
+	/**
+	 * Mouse event listener : the globe reacts to mouse over
+	 */
+	this.canvas.on('mousemove', function() {
+		var coordinates = d3.mouse(this);
+		globe.detectMouse(true, coordinates[0], coordinates[1]);
+	});
+	
+	/**
+	 * Mouse event listener : the globe reacts to mouse out
+	 */
+	this.canvas.on('mouseout', function() {
+		globe.detectMouse(false);
 	});
 	
 

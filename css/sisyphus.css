@@ -9,6 +9,11 @@ html, body {
 .right { float: right; }
 
 .pauser{ color: #fff; }
+.poster {
+	position:absolute;
+	background-color: white;
+	padding: 5px;
+}
 
 canvas {float:left}
 

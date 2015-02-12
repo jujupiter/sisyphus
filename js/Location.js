@@ -88,8 +88,8 @@ var Location = function(name, lat, lng, known, invalid, globe) {
 	 */
 	this.getTopLeft = function() {
 		return {
-			x: this.x*Settings.thumbnail.ratio,
-			y: this.y
+			x: Math.round(this.x*Settings.thumbnail.ratio),
+			y: Math.round(this.y)
 		};
 	};
 	
@@ -146,6 +146,20 @@ var Location = function(name, lat, lng, known, invalid, globe) {
 			globe.path(city);
 			c.fill();
 			
+			// Display album info ?
+			if(this.albumInfoShown) {
+				if(!this.poster) {
+					this.poster = d3.select("body").append("div").attr("class", "poster").text(this.albums[this.albumIndex].title);
+				}
+				var direction = (this.x > this.globe.dimensions.diameter/2) ? -1 : 1;
+			}
+			else {
+				if(this.poster) {
+					this.poster.remove();
+					this.poster = null;
+				}
+			}
+			
 			this.shown = true;
 			// Set album properties
 			this.albums[this.albumIndex].shown = true;
@@ -166,7 +180,7 @@ var Location = function(name, lat, lng, known, invalid, globe) {
 	 * @param {Number} mouseX
 	 * @param {Number} mouseY
 	 */
-	this.matchesClick = function(mouseX, mouseY) {
+	this.matchesMouse = function(mouseX, mouseY) {
 		var appliedCoordinates = this.getTopLeft();
 		var okX = (mouseX > appliedCoordinates.x && mouseX < (appliedCoordinates.x + Settings.thumbnail.effectiveSize));
 		var okY = (mouseY > appliedCoordinates.y && mouseY < (appliedCoordinates.y + Settings.thumbnail.effectiveSize));
@@ -174,11 +188,24 @@ var Location = function(name, lat, lng, known, invalid, globe) {
 	};
 	
 	/**
+	 * Display the album info
+	 */
+	this.displayInfo = function() {
+		this.albumInfoShown = true;
+	};
+	
+	/**
+	 * Hide the album info
+	 */
+	this.hideInfo = function() {
+		this.albumInfoShown = false;
+	};
+	
+	/**
 	 * Launch select album
 	 */
 	this.launchAlbum = function() {
 		if(this.albumIndex!==null && this.albums[this.albumIndex] && this.albums[this.albumIndex].shown) {
-			console.log("hey");
 			this.albums[this.albumIndex].launchAlbum();
 		}
 	};
