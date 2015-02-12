@@ -43,7 +43,7 @@ var Globe = function(selector, diameter, margin, x, y) {
 		// Else, find the location matching the mouse cursor
 		else {
 			for(var i=0; i<globe.locations.length; i++) {
-				if(globe.locations[i].shown && globe.locations[i].matchesMouse(d3.event.offsetX, d3.event.offsetY)) {
+				if(globe.locations[i].shown && globe.locations[i].matchesPoint(d3.event.offsetX, d3.event.offsetY)) {
 					globe.locations[i].launchAlbum();
 					return true;
 				}
@@ -60,7 +60,7 @@ var Globe = function(selector, diameter, margin, x, y) {
 	 */
 	this.detectMouse = function(show, mouseX, mouseY) {
 		for(var i=0; i<this.locations.length; i++) {
-			if(show && this.locations[i].shown && this.locations[i].matchesMouse(mouseX, mouseY)) {
+			if(show && this.locations[i].shown && this.locations[i].matchesPoint(mouseX, mouseY)) {
 				this.locations[i].displayInfo();
 			}
 			else {
@@ -98,11 +98,11 @@ var Globe = function(selector, diameter, margin, x, y) {
 	};
 	
 	/**
-	 * Remove locations with no albums
+	 * Remove locations with no albums or invalid
 	 */
-	this.removeEmptyLocations = function() {
+	this.removeEmptyAndInvalidLocations = function() {
 		for(var i=0; i<this.locations.length; i++) {
-			if(!this.locations[i].albums.length) {
+			if(!this.locations[i].albums.length || this.locations[i].invalid) {
 				this.locations.splice(i, 1);
 			}
 		}
@@ -150,19 +150,36 @@ var Globe = function(selector, diameter, margin, x, y) {
 		
 		// Locations
 		// Get the number of currently shown locations and trigger their display function
-		var count = 0;
+		var countShown = 0;
+		var shownLocations = [];
+		var countAllSeen = 0;
 		for(var i=0; i<this.locations.length; i++) {
+			// This method must always be called first
+			this.locations[i].refreshCoordinates();
 			if(this.locations[i].shown) {
 				this.locations[i].show();
-				count++;
+				countShown++;
+				shownLocations.push(this.locations[i]);
+			}
+			if(this.locations[i].allSeen) {
+				countAllSeen++;
+			}
+		}
+		// Reset albums if everything has been seen now
+		if(countAllSeen==this.locations.length) {
+			for(var i=0; i<this.locations.length; i++) {
+				for(var j=0; j<this.locations[i].albums.length; j++) {
+					this.locations[i].albums[j].seen = false;
+				}
 			}
 		}
 		// If we have less than 3 locations displayed, find as many as necessary
-		for(var i=0; (i<this.locations.length && count<3); i++) {
-			if(this.locations[i].isVisible() && !this.locations[i].shown && !this.locations[i].allSeen) {
+		for(var i=0; (i<this.locations.length && countShown<3); i++) {
+			if(this.locations[i].isSelectable() && !this.locations[i].doesOverlapThese(shownLocations)) {
 				this.locations[i].shown = true;
 				this.locations[i].show();
-				count++;
+				countShown++;
+				shownLocations.push(this.locations[i]);
 			}
 		}
 		

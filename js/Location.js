@@ -75,6 +75,13 @@ var Location = function(name, lat, lng, known, invalid, globe) {
 	};
 	
 	/**
+	 * Is the location selectable to be displayed ?
+	 */
+	this.isSelectable = function() {
+		return this.isVisible() && (this.x < this.globe.dimensions.diameter/2) && !this.shown && !this.allSeen;
+	};
+	
+	/**
 	 * Is the location currently visible on the globe ?
 	 * @return {Boolean}
 	 */
@@ -94,91 +101,126 @@ var Location = function(name, lat, lng, known, invalid, globe) {
 	};
 	
 	/**
+	 * Return a possible index for an album with a recursive function
+	 */
+	this.selectRandomUnseenAlbum = function() {
+		var index = Math.floor((Math.random() * this.albums.length));
+		if(this.albums[index].seen) {
+			return this.selectRandomUnseenAlbum();
+		}
+		else {
+			return index;
+		}
+	};
+	
+	/**
+	 * Refresh location coordinates
+	 */
+	this.refreshCoordinates = function() {
+		var coords = this.globe.projection([this.lng, this.lat]);
+		this.x = coords[0];
+		this.y = coords[1];
+	};
+	
+	/**
 	 * Show location with an album
 	 */
 	this.show = function() {
 		
-		// Select an album to show
-		this.albumIndex = 0; //Math.floor((Math.random() * this.albums.length));
-		
 		if(this.isVisible()) {
 			
-			var c = this.globe.context;
-			var thumbSize = Settings.thumbnail.size;
-			var thumbBorder = Settings.thumbnail.border;
-			
-			// Thumbnail
-			var coords = this.globe.projection([this.lng, this.lat]);
-			this.x = coords[0];
-			this.y = coords[1];
-			var ratio = Settings.thumbnail.ratio;
-			
-			var appliedCoordinates = this.getTopLeft();
-			
-			c.beginPath();
-			c.fillStyle = '#fff';
-			c.rect(appliedCoordinates.x, appliedCoordinates.y, Settings.thumbnail.effectiveSize, Settings.thumbnail.effectiveSize);
-			c.fill();
-			
-			if(!this.thumbnail || this.thumbnail.src != this.albums[this.albumIndex].thumbnail) {
-				this.thumbnail = new Image();
-				this.thumbnail.onload = function() {
-					c.drawImage(this, thumbBorder+appliedCoordinates.x, thumbBorder+appliedCoordinates.y, thumbSize, thumbSize);
-				};
-				this.thumbnail.src = this.albums[this.albumIndex].thumbnail;
-			}
-			else {
-				c.drawImage(this.thumbnail, thumbBorder+appliedCoordinates.x, thumbBorder+appliedCoordinates.y, thumbSize, thumbSize);
-			}
-			
-			// Display the dot
-			c.fillStyle = '#fff';
-			c.beginPath();
-			var city = {
-				type: "Feature",
-				properties: {},
-				geometry : {
-				  "type": "Point",
-				  "coordinates": [this.lng, this.lat]
-				}
-			};
-			this.globe.path(city);
-			c.fill();
-			
-			// Display album info ?
-			var selection = d3.select('div#poster');
-			if(this.albumInfoShown) {
-				selection.style({display:'block'});
-				selection.select('div#locationName').text(this.name);
-				selection.select('div#albumTitle').text(this.albums[this.albumIndex].title);
-			}
-			else {
-				if(selection.select('div#locationName').text()==this.name) {
-					selection.style({display:'none'});
-				}
-			}
-			
-			this.shown = true;
-			// Set album properties
-			this.albums[this.albumIndex].shown = true;
-			this.albums[this.albumIndex].seen = true;
 			// Have all albums for this location been seen now ?
 			this.allSeen = this.getAllSeenAlbums();
 		
+			// Select an album to show if there isn't any yet
+			// To avoid infinite loops, make sure they haven't all been seen yet
+			if(null===this.albumIndex && !this.allSeen) {
+				this.albumIndex = this.selectRandomUnseenAlbum();
+			}
+			
+			// Then and only then can we show the location
+			if(null!==this.albumIndex) {
+				
+				console.log(this.x, this.y);
+			
+				var c = this.globe.context;
+				var thumbSize = Settings.thumbnail.size;
+				var thumbBorder = Settings.thumbnail.border;
+				
+				// Thumbnail
+				var ratio = Settings.thumbnail.ratio;
+				
+				var appliedCoordinates = this.getTopLeft();
+				
+				c.beginPath();
+				c.fillStyle = '#fff';
+				c.rect(appliedCoordinates.x, appliedCoordinates.y, Settings.thumbnail.effectiveSize, Settings.thumbnail.effectiveSize);
+				c.fill();
+				
+				if(!this.thumbnail || this.thumbnail.src != this.albums[this.albumIndex].thumbnail) {
+					this.thumbnail = new Image();
+					this.thumbnail.onload = function() {
+						c.drawImage(this, thumbBorder+appliedCoordinates.x, thumbBorder+appliedCoordinates.y, thumbSize, thumbSize);
+					};
+					this.thumbnail.src = this.albums[this.albumIndex].thumbnail;
+				}
+				else {
+					c.drawImage(this.thumbnail, thumbBorder+appliedCoordinates.x, thumbBorder+appliedCoordinates.y, thumbSize, thumbSize);
+				}
+				
+				// Display the dot
+				c.fillStyle = '#fff';
+				c.beginPath();
+				var city = {
+					type: "Feature",
+					properties: {},
+					geometry : {
+					  "type": "Point",
+					  "coordinates": [this.lng, this.lat]
+					}
+				};
+				this.globe.path(city);
+				c.fill();
+				
+				// Display album info ?
+				var selection = d3.select('div#poster');
+				if(this.albumInfoShown) {
+					selection.style({display:'block'});
+					selection.select('div#locationName').text(this.name);
+					selection.select('div#albumTitle').text(this.albums[this.albumIndex].title);
+				}
+				else {
+					if(selection.select('div#locationName').text()==this.name) {
+						selection.style({display:'none'});
+					}
+				}
+				
+				// Set object properties
+				this.shown = true;
+				this.albums[this.albumIndex].seen = true;
+				
+				// Send success
+				return true;
+				
+			}
+		
 		}
-		else {
-			this.shown = false;
-			this.albums[this.albumIndex].shown = false;
-		}
+		
+		// Specify there is nothing displayed here
+		this.shown = false;
+		this.albumIndex = null;
+		
+		// Send failure
+		return false;
 		
 	};
 	
 	/**
-	 * Location matches click
+	 * Location matches point
 	 * @param {Number} mouseX
 	 * @param {Number} mouseY
 	 */
-	this.matchesMouse = function(mouseX, mouseY) {
+	this.matchesPoint = function(mouseX, mouseY) {
 		var appliedCoordinates = this.getTopLeft();
 		var okX = (mouseX > appliedCoordinates.x && mouseX < (appliedCoordinates.x + Settings.thumbnail.effectiveSize));
 		var okY = (mouseY > appliedCoordinates.y && mouseY < (appliedCoordinates.y + Settings.thumbnail.effectiveSize));
@@ -230,14 +272,30 @@ var Location = function(name, lat, lng, known, invalid, globe) {
 		}
 	};
 
-};
+	/**
+	 * Determine whether this location overlaps another
+	 * @param {Location} otherLocation Location to compare with
+	 * @return {Boolean}
+	 */
+	this.doesOverlap = function(otherLocation) {
+		var otherMinY = otherLocation.y;
+		var otherMaxY = otherLocation.y + Settings.thumbnail.effectiveSize;
+		return (this.y >= otherMinY && this.y <= otherMaxY);
+	};
 
-/**
- * Compute the distance between two locations
- * @param {Location} loc1
- * @param {Location} loc2
- * @return {Number}
- */
-Location.getDistance = function(loc1, loc2) {
-	// TODO
+	/**
+	 * Determine whether this location overlaps with any of the other mentioned locations
+	 * @param {Array} otherLocations Locations to compare with
+	 * @return {Boolean}
+	 */
+	this.doesOverlapThese = function(otherLocations) {
+		for(var i=0; i<otherLocations.length; i++) {
+			if(this.doesOverlap(otherLocations[i])) {
+				console.log(this.name+' overlaps '+otherLocations[i].name);
+				return true;
+			}
+		}
+		return false;
+	};
+
 };

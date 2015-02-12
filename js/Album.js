@@ -12,7 +12,6 @@ var Album = function(data) {
 	this.thumbnail = data.media$group.media$thumbnail[0].url;
 	this.title = data.title.$t;
 	
-	this.visible = false;
 	this.seen = false;
 	
 	this.anchor = d3.select("body").append("a")

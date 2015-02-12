@@ -49,7 +49,7 @@
 			
 			function locationsReady() {
 				if(!globe.locations.containsItemWith('known', false)) {
-					globe.removeEmptyLocations();
+					globe.removeEmptyAndInvalidLocations();
 					globe.display();
 				}
 			}
