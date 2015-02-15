@@ -6,36 +6,39 @@
  * @constructor
  * @param {Object} data
  */
-var Location = function(name, lat, lng, known, invalid, globe) {
+var Location = function(name, lat, lng, invalid, globe) {
 
 	this.name = name;
 	this.lat = lat;
 	this.lng = lng;
-	this.x = null;
-	this.y = null;
-	
+	this.invalid = invalid;
 	this.globe = globe;
 	
-	this.known = known;
-	if(known) {
-		this.invalid = invalid;
-	}
-	else {
-		this.invalid = null;
-	}
+	// These coordinates are not the location's coordinates but the thumbnail's on the canvas
+	this.x = null;
+	this.y = null;
 	
 	this.shown = false;
 	
 	this.albums = [];
 	this.albumIndex = null;
 	this.thumbnail = null;
+	this.thumbnailLoaded = false;
+	
+	
+	/**
+	 * Determine whether a location is known, given the information
+	 */
+	this.isKnown = function() {
+		return ((this.lat!==null && this.lng!==null) || this.invalid!=null);
+	};
 	
 	/**
 	 * Request coordinates for location from Google
 	 */
 	this.requestCoordinates = function(callback) {
 		this.callback = callback;
-		d3.json("http://maps.google.com/maps/api/geocode/json?address="+this.name, this.handleCoordinatesResponse.bind(this));
+		d3.json("http://maps.google.com/maps/api/geocode/json?address="+this.name, this.handleCoordinatesResponse);
 	};
 	
 	/**
@@ -45,34 +48,33 @@ var Location = function(name, lat, lng, known, invalid, globe) {
 	 */
 	this.handleCoordinatesResponse = function(error, results) {
 		
+		console.log(this.name, error, results);
+		
 		// Declare as invalid but don't record result
 		if(error) {
-			this.known = true;
 			this.invalid = true;
 			return;
 		}
 		
 		// At least one result has been found
 		if(results.results.length>0) {
-			this.tLng = results.results[0].geometry.location.lng;
-			this.tLat = results.results[0].geometry.location.lat;
-			this.known = true;
+			this.lng = results.results[0].geometry.location.lng;
+			this.lat = results.results[0].geometry.location.lat;
 			this.invalid = false;
 		}
 		// No match found, location is regarded as invalid
 		else {
-			this.tLng = null;
-			this.tLat = null;
-			this.known = true;
+			this.lng = null;
+			this.lat = null;
 			this.invalid = true;
 		}
 		// Save result into local database
-		d3.json("location.php?action=add&name="+this.name+"&lng="+this.tLng+"&lat="+this.tLat, function() {});
+		d3.json("location.php?action=add&name="+this.name+"&lng="+this.lng+"&lat="+this.lat, function() {});
 		
 		this.callback();
 		this.callback = null;
 		
-	};
+	}.bind(this);
 	
 	/**
 	 * Is the location selectable to be displayed ?
@@ -119,7 +121,12 @@ var Location = function(name, lat, lng, known, invalid, globe) {
 	this.refreshCoordinates = function() {
 		var coords = this.globe.projection([this.lng, this.lat]);
 		this.x = coords[0];
-		this.y = coords[1];
+		if(this.globe.dimensions.height < coords[1] + Settings.thumbnail.effectiveSize) {
+			this.y = coords[1] - Settings.thumbnail.effectiveSize;
+		}
+		else {
+			this.y = coords[1];
+		}
 	};
 	
 	/**
@@ -155,9 +162,16 @@ var Location = function(name, lat, lng, known, invalid, globe) {
 				c.rect(appliedCoordinates.x, appliedCoordinates.y, Settings.thumbnail.effectiveSize, Settings.thumbnail.effectiveSize);
 				c.fill();
 				
+				if(!this.thumbnailLoaded) {
+					c.drawImage(Settings.loadAnim.img, appliedCoordinates.x+Settings.loadAnim.border, appliedCoordinates.y+Settings.loadAnim.border, Settings.loadAnim.width, Settings.loadAnim.height);
+				}
+				
 				if(!this.thumbnail || this.thumbnail.src != this.albums[this.albumIndex].thumbnail) {
+					this.thumbnailLoaded = false;
 					this.thumbnail = new Image();
+					var l = this;
 					this.thumbnail.onload = function() {
+						l.thumbnailLoaded = true;
 						c.drawImage(this, thumbBorder+appliedCoordinates.x, thumbBorder+appliedCoordinates.y, thumbSize, thumbSize);
 					};
 					this.thumbnail.src = this.albums[this.albumIndex].thumbnail;

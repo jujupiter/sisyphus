@@ -98,7 +98,7 @@ var Globe = function(selector, diameter, margin, x, y) {
 	 */
 	this.defineLocationList = function(dataArray) {
 		for(var i=0; i<dataArray.length; i++) {
-			this.locations.push(new Location(dataArray[i].name, dataArray[i].lat, dataArray[i].lng, true, dataArray[i].invalid, this));
+			this.locations.push(new Location(dataArray[i].name, dataArray[i].lat, dataArray[i].lng, dataArray[i].invalid, this));
 		}
 		this.locations.shuffle();
 	};

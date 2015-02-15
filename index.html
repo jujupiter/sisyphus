@@ -11,7 +11,11 @@
 				userId: 'jujupiter',
 				thumbnail: {
 					size: 40,
-					border: 1
+					border: 1,
+				},
+				loadAnim: {
+					img: new Image(),
+					border: null
 				},
 				diameter: 350,
 				margin: 0
@@ -30,26 +34,35 @@
 				<div id="albumTitle"></div>
 			</div>
 		</div>
-		<a class="pauser">Pause</a>
+		<a id="pauser">Pause</a>
+		<img id="loader" src="img/loading.gif" width="30" height="30" />
 		<script type="text/javascript">
 			
 			// Automated settings, do not change
 			Settings.thumbnail.effectiveSize = (Settings.thumbnail.border * 2) + Settings.thumbnail.size;
 			Settings.thumbnail.ratio = 1 - (Settings.thumbnail.effectiveSize / Settings.diameter);
 			
+			// Global variables
 			var paused = false;
 			var globe = new Globe('div#playground', Settings.diameter, Settings.margin, 0, 0);
 			var currentlyShown = null;
-
-			queue()
-				.defer(d3.json, "json/political.json")
-				.defer(d3.json, "https://picasaweb.google.com/data/feed/api/user/"+Settings.userId+"?alt=json")
-				.defer(d3.json, "location.php?action=listing")
-				.await(ready);
+			
+			// Launch
+			function launch() {
+				Settings.loadAnim.border = Settings.thumbnail.size + Settings.thumbnail.border - Settings.loadAnim.width;
+				queue()
+					.defer(d3.json, "json/political.json")
+					.defer(d3.json, "https://picasaweb.google.com/data/feed/api/user/"+Settings.userId+"?alt=json")
+					.defer(d3.json, "location.php?action=listing")
+					.await(ready);
+			}
+			Settings.loadAnim.img.onload = launch;
+			Settings.loadAnim.img.src = 'img/loading.gif';
 			
 			function locationsReady() {
-				if(!globe.locations.containsItemWith('known', false)) {
+				if(!globe.locations.containsItemForWhich('isKnown', false)) {
 					globe.removeEmptyAndInvalidLocations();
+					console.log('hey', globe.locations);
 					globe.display();
 				}
 			}
@@ -63,18 +76,19 @@
 						var index = globe.locations.getIndexBy('name', albums[i]['gphoto$location']['$t']);
 						// If the location is not known, add it
 						if(index==-1) {
-							globe.locations.push(new Location(albums[i]['gphoto$location']['$t'], null, null, false, null));
+							globe.locations.push(new Location(albums[i]['gphoto$location']['$t'], null, null, null, globe));
 							index = globe.locations.getIndexBy('name', albums[i]['gphoto$location']['$t']);
 						}
 						globe.locations[index].albums.push(new Album(albums[i]));
 					}
 			    }
-				globe.locations.callMethodForAll('known', false, 'requestCoordinates', locationsReady);
+				globe.locations.callMethodForAllWhich('isKnown', false, 'requestCoordinates', locationsReady);
 			}
 			
-			d3.select('.pauser').on('click', function() {
+			d3.select('#pauser').on('click', function() {
 				paused = !paused;
 			});
+
 		</script>
 	</body>
 </html>

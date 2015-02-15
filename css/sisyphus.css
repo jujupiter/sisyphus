@@ -10,8 +10,12 @@ canvas { float:left; }
 .left { float: left; }
 .right { float: right; }
 
-.pauser{ color: #fff; }
-
+img#loader{
+	display:none;
+}
+a#pauser{
+	color: #fff;
+}
 div#playground{
 	background-color: none;
 	width: 350px;
