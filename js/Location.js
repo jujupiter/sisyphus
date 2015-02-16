@@ -163,7 +163,8 @@ var Location = function(name, lat, lng, invalid, globe) {
 				c.fill();
 				
 				if(!this.thumbnailLoaded) {
-					c.drawImage(Settings.loadAnim.img, appliedCoordinates.x+Settings.loadAnim.border, appliedCoordinates.y+Settings.loadAnim.border, Settings.loadAnim.width, Settings.loadAnim.height);
+					console.log(Settings.loadAnim.img, appliedCoordinates.x+Settings.loadAnim.border, appliedCoordinates.y+Settings.loadAnim.border, Settings.loadAnim.img.width, Settings.loadAnim.img.height);
+					c.drawImage(Settings.loadAnim.img, appliedCoordinates.x+Settings.loadAnim.border, appliedCoordinates.y+Settings.loadAnim.border, Settings.loadAnim.img.width, Settings.loadAnim.img.height);
 				}
 				
 				if(!this.thumbnail || this.thumbnail.src != this.albums[this.albumIndex].thumbnail) {

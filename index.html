@@ -49,7 +49,7 @@
 			
 			// Launch
 			function launch() {
-				Settings.loadAnim.border = Settings.thumbnail.size + Settings.thumbnail.border - Settings.loadAnim.width;
+				Settings.loadAnim.border = (Settings.thumbnail.size + Settings.thumbnail.border - Settings.loadAnim.img.width) / 2;
 				queue()
 					.defer(d3.json, "json/political.json")
 					.defer(d3.json, "https://picasaweb.google.com/data/feed/api/user/"+Settings.userId+"?alt=json")
