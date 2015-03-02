@@ -48,8 +48,6 @@ var Location = function(name, lat, lng, invalid, globe) {
 	 */
 	this.handleCoordinatesResponse = function(error, results) {
 		
-		console.log(this.name, error, results);
-		
 		// Declare as invalid but don't record result
 		if(error) {
 			this.invalid = true;
@@ -163,7 +161,6 @@ var Location = function(name, lat, lng, invalid, globe) {
 				c.fill();
 				
 				if(!this.thumbnailLoaded) {
-					console.log(Settings.loadAnim.img, appliedCoordinates.x+Settings.loadAnim.border, appliedCoordinates.y+Settings.loadAnim.border, Settings.loadAnim.img.width, Settings.loadAnim.img.height);
 					c.drawImage(Settings.loadAnim.img, appliedCoordinates.x+Settings.loadAnim.border, appliedCoordinates.y+Settings.loadAnim.border, Settings.loadAnim.img.width, Settings.loadAnim.img.height);
 				}
 				
@@ -283,7 +280,7 @@ var Location = function(name, lat, lng, invalid, globe) {
 		for(var i=0; i<this.albums.length; i++) {
 			this.albums[i].seen = false;
 		}
-	};
+	}.bind(this);
 
 	/**
 	 * Determine whether this location overlaps another

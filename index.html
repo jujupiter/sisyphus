@@ -1,8 +1,8 @@
 <html>
 	<head>
 		<meta charset="utf-8">
-		<title>SISYphus</title>
-		<link rel="stylesheet" type="text/css" href="css/sisyphus.css" />
+		<title>SYSYPHUS</title>
+		<link rel="stylesheet" type="text/css" href="css/sysyphus.css" />
 		<script src="http://d3js.org/d3.v3.min.js"></script>
 		<script src="http://d3js.org/queue.v1.min.js"></script>
 		<script src="http://d3js.org/topojson.v1.min.js"></script>
@@ -18,7 +18,8 @@
 					border: null
 				},
 				diameter: 350,
-				margin: 0
+				margin: 0,
+				speed : 30
 			};
 		</script>
 		<script src="js/Array.prototype.js"></script>
@@ -28,13 +29,16 @@
 	</head>
 	<body>
 		<div id="playground">
+			<div id="prester">
+				<img src="img/sysyphus.gif" width="350" height="39">
+				<a id="pauser"><img src="img/pause.gif" width="8" height="10"></a>
+			</div>
 			<canvas></canvas>
 			<div id="poster">
 				<div id="locationName"></div>
 				<div id="albumTitle"></div>
 			</div>
 		</div>
-		<a id="pauser">Pause</a>
 		<img id="loader" src="img/loading.gif" width="30" height="30" />
 		<script type="text/javascript">
 			
@@ -62,7 +66,6 @@
 			function locationsReady() {
 				if(!globe.locations.containsItemForWhich('isKnown', false)) {
 					globe.removeEmptyAndInvalidLocations();
-					console.log('hey', globe.locations);
 					globe.display();
 				}
 			}
@@ -87,6 +90,7 @@
 			
 			d3.select('#pauser').on('click', function() {
 				paused = !paused;
+				d3.select('#pauser img')[0][0].src = paused ? 'img/play.gif' : 'img/pause.gif';
 			});
 
 		</script>

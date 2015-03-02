@@ -15,18 +15,27 @@ img#loader{
 }
 a#pauser{
 	color: #fff;
+	cursor: pointer;
 }
 div#playground{
 	background-color: none;
 	width: 350px;
 	height: 350px;
 	position: absolute;
-	top:0;
+	top:-60px;
 	bottom: 0;
 	left: 0;
 	right: 0;
 	margin: auto;
 	text-align: center;
+}
+div#prester {
+	float: left;
+	margin-bottom: 0px;
+	width: inherit;
+}
+div#prester img {
+	margin-bottom: 10px;
 }
 div#poster {
 	display: none;

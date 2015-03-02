@@ -173,11 +173,7 @@ var Globe = function(selector, diameter, margin, x, y) {
 		}
 		// Reset albums if everything has been seen now
 		if(countAllSeen==this.locations.length) {
-			for(var i=0; i<this.locations.length; i++) {
-				for(var j=0; j<this.locations[i].albums.length; j++) {
-					this.locations[i].albums[j].seen = false;
-				}
-			}
+			this.reset();
 		}
 		// If we have less than 3 locations displayed, find as many as necessary
 		for(var i=0; (i<this.locations.length && countShown<3); i++) {
@@ -193,6 +189,18 @@ var Globe = function(selector, diameter, margin, x, y) {
 	}.bind(this);
 	
 	/**
+	 * Reset all albums as unseen
+	 */
+	this.reset = function() {
+		paused = true;
+		for(var i=0; i<this.locations.length; i++) {
+			this.locations[i].resetAllAlbumsAsUnseen();
+			this.locations[i].allSeen = false;
+		}
+		paused = false;
+	}.bind(this);
+	
+	/**
 	 * Rotate the globe
 	 */
 	this.rotate = function() {
@@ -201,8 +209,8 @@ var Globe = function(selector, diameter, margin, x, y) {
 			if(this.dimensions.x>360) {
 				this.dimensions.x = 0;
 			}
-			return this.trace;
 		}
+		return this.trace;
 	}.bind(this);
 	
 	/**
@@ -210,7 +218,7 @@ var Globe = function(selector, diameter, margin, x, y) {
 	 */
 	this.display = function() {
 		d3.transition()
-			.duration(30)
+			.duration(Settings.speed)
 			.tween("rotate", this.rotate)
 		  .transition()
 			.each("end", this.display);
