@@ -2,6 +2,8 @@
 	<head>
 		<meta charset="utf-8">
 		<title>SYSYPHUS</title>
+		<link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+		<link rel="icon" href="favicon.ico" type="image/x-icon">
 		<link rel="stylesheet" type="text/css" href="css/sysyphus.css" />
 		<script src="http://d3js.org/d3.v3.min.js"></script>
 		<script src="http://d3js.org/queue.v1.min.js"></script>
@@ -53,7 +55,7 @@
 			
 			// Launch
 			function launch() {
-				Settings.loadAnim.border = (Settings.thumbnail.size + Settings.thumbnail.border - Settings.loadAnim.img.width) / 2;
+				Settings.loadAnim.border = (Settings.thumbnail.size + Settings.thumbnail.border - Settings.loadAnim.img.height) / 2;
 				queue()
 					.defer(d3.json, "json/political.json")
 					.defer(d3.json, "https://picasaweb.google.com/data/feed/api/user/"+Settings.userId+"?alt=json")
@@ -61,7 +63,7 @@
 					.await(ready);
 			}
 			Settings.loadAnim.img.onload = launch;
-			Settings.loadAnim.img.src = 'img/loading.gif';
+			Settings.loadAnim.img.src = 'img/sprite.gif';
 			
 			function locationsReady() {
 				if(!globe.locations.containsItemForWhich('isKnown', false)) {

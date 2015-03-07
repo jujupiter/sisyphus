@@ -74,7 +74,6 @@ Array.prototype.callMethodForAll = function(propertyName, propertyValue, method,
 	var hasCalled = false;
 	for(var i=0; i<this.length; i++) {
 		if(this[i].hasOwnProperty(propertyName) && this[i][propertyName]==propertyValue) {
-			console.log();
 			this[i][method](callback);
 			hasCalled = true;
 		}
@@ -88,7 +87,6 @@ Array.prototype.callMethodForAllWhich = function(methodName, returnedValue, meth
 	var hasCalled = false;
 	for(var i=0; i<this.length; i++) {
 		if(this[i].hasOwnProperty(methodName) && this[i][methodName]()==returnedValue) {
-			console.log(this[i]);
 			this[i][method](callback);
 			hasCalled = true;
 		}

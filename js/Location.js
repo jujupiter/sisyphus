@@ -146,13 +146,13 @@ var Location = function(name, lat, lng, invalid, globe) {
 			// Then and only then can we show the location
 			if(null!==this.albumIndex) {
 			
+				// Thumbnail
+				
 				var c = this.globe.context;
 				var thumbSize = Settings.thumbnail.size;
 				var thumbBorder = Settings.thumbnail.border;
 				
-				// Thumbnail
 				var ratio = Settings.thumbnail.ratio;
-				
 				var appliedCoordinates = this.getTopLeft();
 				
 				c.beginPath();
@@ -160,8 +160,10 @@ var Location = function(name, lat, lng, invalid, globe) {
 				c.rect(appliedCoordinates.x, appliedCoordinates.y, Settings.thumbnail.effectiveSize, Settings.thumbnail.effectiveSize);
 				c.fill();
 				
+				// Loading animation
 				if(!this.thumbnailLoaded) {
-					c.drawImage(Settings.loadAnim.img, appliedCoordinates.x+Settings.loadAnim.border, appliedCoordinates.y+Settings.loadAnim.border, Settings.loadAnim.img.width, Settings.loadAnim.img.height);
+					var frame = this.globe.dimensions.x % 8;
+					c.drawImage(Settings.loadAnim.img, frame*30, 0, 30, 30, appliedCoordinates.x+Settings.loadAnim.border, appliedCoordinates.y+Settings.loadAnim.border, 30, 30);
 				}
 				
 				if(!this.thumbnail || this.thumbnail.src != this.albums[this.albumIndex].thumbnail) {
@@ -170,7 +172,6 @@ var Location = function(name, lat, lng, invalid, globe) {
 					var l = this;
 					this.thumbnail.onload = function() {
 						l.thumbnailLoaded = true;
-						c.drawImage(this, thumbBorder+appliedCoordinates.x, thumbBorder+appliedCoordinates.y, thumbSize, thumbSize);
 					};
 					this.thumbnail.src = this.albums[this.albumIndex].thumbnail;
 				}
