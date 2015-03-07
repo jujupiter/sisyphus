@@ -1,7 +1,7 @@
 html, body {
 	font-size: 12px;
 	font-family: Arial, Verdana;
-	background: #002 url("../img/cosmos.jpg") no-repeat center center;
+	background: #002 url("../img/cosmos.jpg") no-repeat fixed center center;
 }
 
 canvas { float:left; }
@@ -10,9 +10,6 @@ canvas { float:left; }
 .left { float: left; }
 .right { float: right; }
 
-img#loader{
-	display:none;
-}
 a#pauser{
 	color: #fff;
 	cursor: pointer;
@@ -28,6 +25,10 @@ div#playground{
 	right: 0;
 	margin: auto;
 	text-align: center;
+}
+div#disclaimer {
+	display: none;
+	color: #fff;
 }
 div#prester {
 	float: left;
